@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -20,6 +22,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -31,8 +34,6 @@ import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
@@ -40,6 +41,7 @@ import com.wanderwildwood.dajiki.write.Opened
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.countWords
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * The page. Everything else in the app exists to get here and then get out of the way.
@@ -67,15 +69,25 @@ fun PageScreen(
     onFiles: () -> Unit,
     onRename: (String) -> Unit,
 ) {
-    // Keyed on the opened sheet, so opening another one starts a fresh field rather than
-    // carrying the last one's cursor into it.
-    var value by remember(opened) {
-        mutableStateOf(
-            // The cursor starts at the end: a sheet is almost always opened to carry on,
-            // and the alternative is a reader who types their next sentence into the top
-            // of the last one.
-            TextFieldValue(opened.text, TextRange(opened.text.length)),
-        )
+    /*
+     * The text lives in a TextFieldState rather than in a value this screen hands back and
+     * forth, and that is what brings undo with it: the state keeps its own edit history and
+     * the field maps Ctrl-Z and Ctrl-Shift-Z onto it. A writing app that cannot take back the
+     * last thing you typed is wrong, and an undo stack written by hand here would be a worse
+     * copy of the one already in the library.
+     *
+     * Keyed on the opened sheet, so opening another one starts a fresh field with a fresh
+     * history rather than carrying the last sheet's cursor, or its undo, into it. The cursor
+     * starts at the end, which is where the constructor puts it: a sheet is almost always
+     * opened to carry on, and the alternative is a reader who types their next sentence into
+     * the top of the last one.
+     */
+    val field = remember(opened) { TextFieldState(opened.text) }
+
+    // Every change out to the view model, which does its own waiting before it writes. A
+    // change that leaves the text as it was is dropped there rather than here.
+    LaunchedEffect(field) {
+        snapshotFlow { field.text.toString() }.collectLatest(onEdited)
     }
 
     /**
@@ -85,9 +97,11 @@ fun PageScreen(
      * each keystroke restarts the wait and the count lands once the writer pauses.
      */
     var words by remember(opened) { mutableIntStateOf(countWords(opened.text)) }
-    LaunchedEffect(value.text) {
-        delay(WORD_COUNT_PAUSE)
-        words = countWords(value.text)
+    LaunchedEffect(field) {
+        snapshotFlow { field.text.toString() }.collectLatest { text ->
+            delay(WORD_COUNT_PAUSE)
+            words = countWords(text)
+        }
     }
 
     val focus = remember { FocusRequester() }
@@ -105,11 +119,8 @@ fun PageScreen(
             .background(MaterialTheme.colorScheme.surface),
     ) {
         BasicTextField(
-            value = value,
-            onValueChange = {
-                value = it
-                onEdited(it.text)
-            },
+            state = field,
+            lineLimits = TextFieldLineLimits.MultiLine(),
             textStyle = when (size) {
                 Size.SMALL -> MaterialTheme.typography.bodySmall
                 Size.MEDIUM -> MaterialTheme.typography.bodyMedium

@@ -35,9 +35,9 @@ line needed to be attached to.
   picker — so it can be a folder a sync app already owns, and the files are still there if
   this app is uninstalled. No storage permission is asked for, because that grant is not a
   permission.
-- **Ctrl-S, Ctrl-N, Ctrl-O and Escape.** Everything else a keyboard does — Home, End, page
-  keys, shift to select, word-wise arrows — is the platform's text field doing what it
-  already does correctly, untouched.
+- **Ctrl-S, Ctrl-N, Ctrl-O and Escape**, and **Ctrl-Z to take back what you just typed**.
+  Everything else a keyboard does — Home, End, page keys, shift to select, word-wise arrows —
+  is the platform's text field doing what it already does correctly, untouched.
 - **Saves two seconds after you stop typing**, and again on the way out of the app. The foot
   of the page says when what you see is not yet on disk.
 - **Never writes over a sheet that changed somewhere else.** The folder is meant to be one a
@@ -68,8 +68,13 @@ has been driven on a device, and the save path has been checked against the thin
 actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
 sheet that changed underneath the app is copied rather than overwritten.
 
+A document of 5,227 words has been through it, and typing into it costs exactly what typing
+into a two word one costs — measured, with the short document as a control, because the
+absolute frame numbers off an emulator are worth nothing on their own.
+
 What has **not** happened is anybody writing anything real in it. No afternoon's work has
-gone through it, which is the test that matters for a writing app.
+gone through it, which is the test that matters for a writing app, and the panel it is meant
+for is slower than anything this has been measured on.
 
 The keyboard shortcuts are confirmed. Ctrl-O went to the folder without typing an `o`,
 Ctrl-S wrote the sheet before the pause could have, Ctrl-N started one, and Escape closed
