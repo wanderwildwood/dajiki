@@ -62,7 +62,12 @@ line needed to be attached to.
 
 ## What it does not do
 
-No permissions at all. No network — the one web address in the app is handed to a browser.
+No permissions at all — nothing is asked of you, and there is no `INTERNET` permission, so it
+cannot open a network connection even by accident. (Read the built APK rather than the manifest
+and you will find one entry, `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`; AndroidX defines that
+inside this app's own package so a runtime broadcast receiver is not exposed to other apps. It
+is a lock rather than a key. PRIVACY.md says so at length.) No network — the one web address in
+the app is handed to a browser.
 No formatting, no preview, no spellcheck, no themes. It does not sync, and does not want to:
 it writes files into a folder, and whatever already syncs that folder does the rest. It does
 not merge two versions of a sheet either — it keeps both and says so. And it does not rename:
