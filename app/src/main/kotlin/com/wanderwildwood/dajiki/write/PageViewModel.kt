@@ -55,7 +55,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     private var saving: Job? = null
 
     init {
-        preferences.folder?.let { load(it) }
+        preferences.folder?.let { list(it) }
     }
 
     /**
@@ -81,11 +81,15 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 },
             )
         }
-        load(uri)
+        list(uri)
     }
 
-    private fun load(uri: Uri) {
-        viewModelScope.launch {
+    private fun list(uri: Uri) {
+        viewModelScope.launch { listNow(uri) }
+    }
+
+    private suspend fun listNow(uri: Uri) {
+        run {
             val sheets = runCatching { withContext(Dispatchers.IO) { folder.list(uri) } }
             sheets.onSuccess { found ->
                 _state.update { it.copy(sheets = found) }
@@ -136,12 +140,31 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Close the sheet and go back to the folder, having saved it first. */
+    /**
+     * Close the sheet and go back to the folder, having written it out first.
+     *
+     * The sheet and the text are taken now, before anything is cleared. They used to be read
+     * inside the save, which ran a moment later against a state whose open sheet this method
+     * had already set to null — so closing a page with unsaved words in it wrote nothing at
+     * all, silently, which is the worst thing this app could do.
+     *
+     * The folder is listed again afterwards rather than alongside, so the row for the sheet
+     * just closed shows when it was actually written rather than when it was last opened.
+     */
     fun close() {
-        saveNow()
+        val sheet = state.value.opened?.sheet
+        val text = pending
+        val dirty = state.value.unsaved
+
+        saving?.cancel()
+        saving = null
         preferences.lastOpen = null
         _state.update { it.copy(opened = null) }
-        state.value.folder?.let(::load)
+
+        viewModelScope.launch {
+            if (dirty && sheet != null) write(sheet, text)
+            state.value.folder?.let { listNow(it) }
+        }
     }
 
     /**
@@ -155,21 +178,27 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         saving?.cancel()
         saving = viewModelScope.launch {
             delay(PAUSE)
-            write()
+            val sheet = state.value.opened?.sheet ?: return@launch
+            write(sheet, pending)
         }
     }
 
-    /** Write now, whatever the wait was doing. Called on the way out of the app and the sheet. */
+    /**
+     * Write now, whatever the wait was doing. Called on the way out of the app and the sheet.
+     *
+     * What is being written is settled here rather than inside the coroutine. A save that
+     * looks up its own subject when it finally runs is a save that can find the subject gone.
+     */
     fun saveNow() {
         saving?.cancel()
         saving = null
         if (!state.value.unsaved) return
-        viewModelScope.launch { write() }
-    }
-
-    private suspend fun write() {
         val sheet = state.value.opened?.sheet ?: return
         val text = pending
+        viewModelScope.launch { write(sheet, text) }
+    }
+
+    private suspend fun write(sheet: Sheet, text: String) {
         runCatching { withContext(Dispatchers.IO) { folder.write(sheet.uri, text) } }
             .onSuccess {
                 // Only if nothing was typed while the write was in flight. Clearing the mark

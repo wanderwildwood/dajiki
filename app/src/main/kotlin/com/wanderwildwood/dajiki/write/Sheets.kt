@@ -76,6 +76,16 @@ class Folder(context: Context) {
         return known || mime?.startsWith("text/") == true
     }
 
+    /** What the provider calls the document at [uri], or null if it will not say. */
+    private fun nameOf(uri: Uri): String? =
+        resolver.query(
+            uri,
+            arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { if (it.moveToFirst()) it.getString(0) else null }
+
     /** Everything in a sheet, as text. */
     fun read(uri: Uri): String =
         resolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
@@ -138,6 +148,14 @@ class Folder(context: Context) {
         )
         val uri = DocumentsContract.createDocument(resolver, parent, "text/plain", name)
             ?: error("The folder would not take a new sheet.")
-        return Sheet(uri = uri, name = "$name.txt", modified = System.currentTimeMillis())
+        // What it ended up called, asked rather than assumed. The provider adds the
+        // extension, and where a sheet of that name is already there it picks another --
+        // "2026-09-17 1432 (1).txt" -- and the row would otherwise name a file that is not
+        // the one just made.
+        return Sheet(
+            uri = uri,
+            name = nameOf(uri) ?: "$name.txt",
+            modified = System.currentTimeMillis(),
+        )
     }
 }

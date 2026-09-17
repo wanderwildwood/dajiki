@@ -153,16 +153,18 @@ private fun Sheets(sheets: List<Sheet>, onOpen: (Sheet) -> Unit, onNew: () -> Un
  * A provider that keeps no modification time reports zero, and "56 years ago" is worse than
  * saying nothing, so that case says nothing.
  */
-private fun when_(modified: Long): String =
-    if (modified <= 0L) {
-        "Not dated"
-    } else {
-        DateUtils.getRelativeTimeSpanString(
-            modified,
-            System.currentTimeMillis(),
-            DateUtils.MINUTE_IN_MILLIS,
-        ).toString()
-    }
+private fun when_(modified: Long): String {
+    if (modified <= 0L) return "Not dated"
+    val ago = System.currentTimeMillis() - modified
+    // Android's own phrasing for anything under a minute is "0 minutes ago", which is not
+    // a thing anyone says, and it is the line the sheet you just closed will be showing.
+    if (ago in 0 until DateUtils.MINUTE_IN_MILLIS) return "Just now"
+    return DateUtils.getRelativeTimeSpanString(
+        modified,
+        System.currentTimeMillis(),
+        DateUtils.MINUTE_IN_MILLIS,
+    ).toString()
+}
 
 @Composable
 internal fun BarButton(

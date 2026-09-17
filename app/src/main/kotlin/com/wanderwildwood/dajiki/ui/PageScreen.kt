@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -96,8 +95,11 @@ fun PageScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .imePadding(),
+            // No keyboard inset is applied here: the manifest asks for adjustResize, so
+            // the window has already shrunk by the time a soft keyboard is up, and
+            // padding it again would leave a second gap the same size. This app expects
+            // a real keyboard anyway, and then there is no inset at all.
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         BasicTextField(
             value = value,
