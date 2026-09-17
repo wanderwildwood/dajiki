@@ -12,6 +12,14 @@ Not a fork. Written from scratch in Kotlin and Jetpack Compose, using Mudita's o
 [MMD](https://github.com/mudita/MMD) design system so it looks like the apps the phone
 already ships with.
 
+| | |
+|---|---|
+| ![The page, and nothing else](screenshots/1-page.png) | ![A folder of sheets](screenshots/2-files.png) |
+| ![Three things to set](screenshots/3-settings.png) | ![Where the writing lives](screenshots/4-about.png) |
+
+*Turned a quarter, because the screen is landscape and this page is not. Tilt your head to
+the right.*
+
 ## Why it exists
 
 Because turning an E Ink phone into a writerdeck currently means one of two bad options.
