@@ -44,6 +44,15 @@ android {
             realSigningConfig?.let { signingConfig = it }
         }
         getByName("release") {
+            // AGP otherwise stamps the git revision of the build into META-INF, which
+            // publishes a little more about how a release was made than a release needs to
+            // - and it is also the one thing that differs between a release built on the
+            // build box, which works from an rsync with no .git, and the one GitHub
+            // publishes from a clone. Off, so the two hash the same, which is the only way
+            // the checksum in a forum post can be checked against anything but itself.
+            vcsInfo {
+                include = false
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

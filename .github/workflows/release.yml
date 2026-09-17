@@ -68,7 +68,7 @@ jobs:
       # every other wrong key and for an unsigned build, which is why it is not used here.
       - name: Verify the signing certificate
         env:
-          EXPECTED: f28551f6ba160850f930cc966031475c9152bbc2aaf30f8972497853b7fc28af
+          EXPECTED: 01414a052801e31cf5f0786e461293efdeed09511dc7dc48f0cbd26a3ba23f39
         run: |
           apk=$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk')
           apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
@@ -96,27 +96,27 @@ jobs:
       # Two copies of the same APK go up. The versioned name is what people end up with in
       # their downloads folder and what a checksum in a forum post refers to; the
       # unversioned one exists so that
-      #   .../releases/latest/download/yorimichi.apk
+      #   .../releases/latest/download/dajiki.apk
       # is a link that keeps working after the next release, which a versioned link does
       # not. Both are byte-identical - only the file name differs.
       - name: Rename APK and generate checksum
         run: |
-          apk_name="yorimichi-${GITHUB_REF_NAME}.apk"
+          apk_name="dajiki-${GITHUB_REF_NAME}.apk"
           apk_path=$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk')
           cp "$apk_path" "$apk_name"
           sha256sum "$apk_name" > "${apk_name}.sha256"
-          cp "$apk_path" yorimichi.apk
-          sha256sum yorimichi.apk > yorimichi.apk.sha256
+          cp "$apk_path" dajiki.apk
+          sha256sum dajiki.apk > dajiki.apk.sha256
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          # yorimichi-*.apk does not match yorimichi.apk, so the fixed-name pair is listed.
+          # dajiki-*.apk does not match dajiki.apk, so the fixed-name pair is listed.
           files: |
-            yorimichi-*.apk
-            yorimichi-*.apk.sha256
-            yorimichi.apk
-            yorimichi.apk.sha256
+            dajiki-*.apk
+            dajiki-*.apk.sha256
+            dajiki.apk
+            dajiki.apk.sha256
           # No body_path: the standing description of the app lives in the README, and
           # stamping it over every release body buries the news under it. What CI writes
           # is the changelog; the note itself is written by hand.
