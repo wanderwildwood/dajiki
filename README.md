@@ -71,10 +71,11 @@ sheet that changed underneath the app is copied rather than overwritten.
 What has **not** happened is anybody writing anything real in it. No afternoon's work has
 gone through it, which is the test that matters for a writing app.
 
-The Ctrl shortcuts are the one thing not confirmed on hardware. The keys and the modifier
-state are both known to reach the app, but the emulator this was driven on uses a keyboard
-layout with no Ctrl key on it, so the Ctrl combinations themselves have only been reasoned
-about. A real Bluetooth keyboard settles it in ten seconds.
+The keyboard shortcuts are confirmed. Ctrl-O went to the folder without typing an `o`,
+Ctrl-S wrote the sheet before the pause could have, Ctrl-N started one, and Escape closed
+the page. That took some getting at: the emulator's keyboard uses a layout with no Ctrl key
+defined in it at all, so every combination arrived as a bare letter until the layout was
+replaced.
 
 The icon is a placeholder.
 
