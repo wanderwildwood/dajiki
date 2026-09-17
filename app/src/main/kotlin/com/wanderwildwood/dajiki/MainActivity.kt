@@ -117,12 +117,14 @@ private fun Typewriter(
             onChooseFolder = { choose.launch(state.folder) },
             onTurn = viewModel::setTurn,
             onSize = viewModel::setSize,
+            onWordCount = viewModel::toggleWordCount,
         )
 
         opened != null -> PageScreen(
             opened = opened,
             size = state.size,
             unsaved = state.unsaved,
+            showWordCount = state.wordCount,
             onEdited = viewModel::edited,
             onSaveNow = viewModel::saveNow,
             onNew = viewModel::newSheet,

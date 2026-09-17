@@ -49,6 +49,18 @@ class Preferences(context: Context) {
             .getOrDefault(Size.MEDIUM)
         set(value) = store.edit().putString(SIZE, value.name).apply()
 
+    /**
+     * Whether the foot of the page counts the words.
+     *
+     * Off is a real answer, not a tidying preference. The count is runs of non-whitespace,
+     * which is what a writer of English expects and is simply wrong for a language that does
+     * not put spaces between its words: a page of Japanese counts as one word. Rather than
+     * show a number that is wrong in somebody's language, it can be put away.
+     */
+    var wordCount: Boolean
+        get() = store.getBoolean(WORD_COUNT, true)
+        set(value) = store.edit().putBoolean(WORD_COUNT, value).apply()
+
     /** The sheet that was open when the app was last put down, so it opens there again. */
     var lastOpen: Uri?
         get() = store.getString(LAST_OPEN, null)?.let(Uri::parse)
@@ -58,6 +70,7 @@ class Preferences(context: Context) {
         const val FOLDER = "folder"
         const val TURN = "turn"
         const val SIZE = "size"
+        const val WORD_COUNT = "word_count"
         const val LAST_OPEN = "last_open"
     }
 }

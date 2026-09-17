@@ -36,6 +36,7 @@ data class PageState(
     val unsaved: Boolean = false,
     val turn: Turn = Turn.ACROSS,
     val size: Size = Size.MEDIUM,
+    val wordCount: Boolean = true,
     /** Something that went wrong, in words, shown until it is read and dismissed. */
     val trouble: String? = null,
 )
@@ -50,6 +51,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             folder = preferences.folder,
             turn = preferences.turn,
             size = preferences.size,
+            wordCount = preferences.wordCount,
         ),
     )
     val state: StateFlow<PageState> = _state.asStateFlow()
@@ -493,6 +495,12 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 .onFailure { say("${sheet.name} could not be deleted.", it) }
         }
+    }
+
+    fun toggleWordCount() {
+        val wanted = !state.value.wordCount
+        preferences.wordCount = wanted
+        _state.update { it.copy(wordCount = wanted) }
     }
 
     fun setTurn(turn: Turn) {

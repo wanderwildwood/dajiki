@@ -3,6 +3,9 @@ package com.wanderwildwood.dajiki.ui
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.dajiki.write.PageState
@@ -39,6 +43,7 @@ fun SettingsScreen(
     onChooseFolder: () -> Unit,
     onTurn: (Turn) -> Unit,
     onSize: (Size) -> Unit,
+    onWordCount: () -> Unit,
 ) {
     var aboutOpen by remember { mutableStateOf(false) }
 
@@ -74,6 +79,16 @@ fun SettingsScreen(
                 },
                 onClick = { onTurn(next(state.turn)) },
             )
+            Toggle(
+                title = "Count the words",
+                // The one setting whose reason a label cannot carry, so it gets the second
+                // line the house style reserves for exactly that: the count is runs of
+                // non-whitespace, and that is not what a word is in every language.
+                note = "Counted as runs between spaces, so it is wrong for a language that " +
+                    "does not use them.",
+                checked = state.wordCount,
+                onClick = onWordCount,
+            )
             Setting(
                 title = "Text size",
                 value = when (state.size) {
@@ -104,6 +119,29 @@ private inline fun <reified T : Enum<T>> next(current: T): T {
 private fun folderName(folder: Uri): String {
     val last = folder.lastPathSegment ?: return folder.toString()
     return last.substringAfter(':', last).ifBlank { last }
+}
+
+/**
+ * A setting that is on or off. A switch rather than a value to cycle, because that is what
+ * this shop's library draws for a boolean; `onCheckedChange = null` is the documented way to
+ * let the row around it take the press.
+ */
+@Composable
+private fun Toggle(title: String, note: String, checked: Boolean, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
+            TextMMD(text = note, style = MaterialTheme.typography.labelSmall)
+        }
+        Spacer(Modifier.width(16.dp))
+        SwitchMMD(checked = checked, onCheckedChange = null)
+    }
 }
 
 @Composable

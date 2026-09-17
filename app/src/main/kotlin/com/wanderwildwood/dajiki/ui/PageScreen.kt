@@ -1,5 +1,6 @@
 package com.wanderwildwood.dajiki.ui
 
+import android.view.KeyCharacterMap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -64,6 +65,7 @@ fun PageScreen(
     opened: Opened,
     size: Size,
     unsaved: Boolean,
+    showWordCount: Boolean,
     onEdited: (String) -> Unit,
     onSaveNow: () -> Unit,
     onNew: () -> Unit,
@@ -98,7 +100,9 @@ fun PageScreen(
      * each keystroke restarts the wait and the count lands once the writer pauses.
      */
     var words by remember(opened) { mutableIntStateOf(countWords(opened.text)) }
-    LaunchedEffect(field) {
+    // Keyed on the setting as well, so that turning the count off also stops the counting.
+    LaunchedEffect(field, showWordCount) {
+        if (!showWordCount) return@LaunchedEffect
         snapshotFlow { field.text.toString() }.collectLatest { text ->
             delay(WORD_COUNT_PAUSE)
             words = countWords(text)
@@ -139,7 +143,7 @@ fun PageScreen(
         HorizontalDividerMMD()
         Foot(
             name = opened.sheet.name,
-            words = words,
+            words = words.takeIf { showWordCount },
             unsaved = unsaved,
             onFiles = onFiles,
             onRename = { renaming = true },
@@ -184,12 +188,31 @@ private fun shortcut(
     // sent to the folder instead - and Polish is the first language in the store's own list.
     // Anything held with Alt belongs to the text field, whatever else is held with it.
     if (!event.isCtrlPressed || event.isAltPressed) return false
-    return when (event.key) {
-        Key.S -> { onSaveNow(); true }
-        Key.N -> { onNew(); true }
-        Key.O -> { onFiles(); true }
+    return when (printed(event)) {
+        's' -> { onSaveNow(); true }
+        'n' -> { onNew(); true }
+        'o' -> { onFiles(); true }
         else -> false
     }
+}
+
+/**
+ * The letter printed on the key, under whatever layout the reader is using.
+ *
+ * Matching the key *code* would bind these shortcuts to positions on a US keyboard rather
+ * than to letters. That happens to survive AZERTY, where S, N and O sit where they do on
+ * QWERTY, and it does not survive Dvorak, where Ctrl-S would fall on whichever key happens
+ * to occupy the QWERTY S position and the key marked S would do nothing at all.
+ *
+ * Asked with no modifiers, so that the answer is the letter on the keycap rather than
+ * whatever Shift or anything else held at the time would have produced. A key that prints
+ * nothing, and a dead key - which comes back with the combining flag set rather than as a
+ * character - are both "not a letter", which is the right answer for a shortcut.
+ */
+private fun printed(event: androidx.compose.ui.input.key.KeyEvent): Char? {
+    val code = event.nativeKeyEvent.getUnicodeChar(0)
+    if (code == 0 || (code and KeyCharacterMap.COMBINING_ACCENT) != 0) return null
+    return code.toChar().lowercaseChar()
 }
 
 /**
@@ -202,7 +225,7 @@ private fun shortcut(
 @Composable
 private fun Foot(
     name: String,
-    words: Int,
+    words: Int?,
     unsaved: Boolean,
     onFiles: () -> Unit,
     onRename: () -> Unit,
@@ -241,8 +264,10 @@ private fun Foot(
         )
         TextMMD(
             text = buildString {
-                append("· ")
-                append(if (words == 1) "1 word" else "$words words")
+                if (words != null) {
+                    append("· ")
+                    append(if (words == 1) "1 word" else "$words words")
+                }
                 // Said in words rather than shown as a dot. A dot on a panel with sixteen
                 // greys is a speck the reader has to learn the meaning of, and this is the
                 // one thing on the screen they might need to act on.
