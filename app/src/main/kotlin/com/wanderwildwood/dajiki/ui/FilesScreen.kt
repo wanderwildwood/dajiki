@@ -19,6 +19,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +52,7 @@ fun FilesScreen(
     onChooseFolder: () -> Unit,
     onOpen: (Sheet) -> Unit,
     onNew: () -> Unit,
+    onDelete: (Sheet) -> Unit,
     onSettings: () -> Unit,
 ) {
     Scaffold(
@@ -61,7 +68,7 @@ fun FilesScreen(
             if (state.folder == null) {
                 NoFolder(onChooseFolder)
             } else {
-                Sheets(state.sheets, state.reading, onOpen, onNew)
+                Sheets(state.sheets, state.reading, onOpen, onNew, onDelete)
             }
         }
     }
@@ -104,6 +111,7 @@ private fun Sheets(
     reading: Reading,
     onOpen: (Sheet) -> Unit,
     onNew: () -> Unit,
+    onDelete: (Sheet) -> Unit,
 ) {
     LazyColumnMMD(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
@@ -148,16 +156,51 @@ private fun Sheets(
         }
 
         items(sheets, key = { it.uri.toString() }) { sheet ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpen(sheet) }
-                    .padding(vertical = 14.dp),
-            ) {
-                TextMMD(text = sheet.name, style = MaterialTheme.typography.bodyMedium)
-                TextMMD(text = when_(sheet.modified), style = MaterialTheme.typography.labelSmall)
-            }
+            SheetRow(sheet, onOpen = { onOpen(sheet) }, onDelete = { onDelete(sheet) })
         }
+    }
+}
+
+/**
+ * One sheet, and the only way to be rid of it.
+ *
+ * The row asks rather than a dialog: one repaint instead of two, and the question is put in
+ * the place the answer belongs. It disarms itself after four seconds, so a stray tap leaves
+ * nothing live for whoever picks the phone up next, and tapping the row while it is armed
+ * puts it away rather than opening the sheet.
+ */
+@Composable
+private fun SheetRow(sheet: Sheet, onOpen: () -> Unit, onDelete: () -> Unit) {
+    var armed by remember(sheet.uri) { mutableStateOf(false) }
+    LaunchedEffect(armed) {
+        if (armed) {
+            delay(4000)
+            armed = false
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { if (armed) armed = false else onOpen() }
+            .padding(vertical = 14.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            TextMMD(
+                text = if (armed) "Delete this sheet — tap again" else sheet.name,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            TextMMD(text = when_(sheet.modified), style = MaterialTheme.typography.labelSmall)
+        }
+        Icon(
+            imageVector = Icons.Delete,
+            contentDescription = if (armed) "Delete this sheet — tap again" else "Delete this sheet",
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { if (armed) onDelete() else armed = true },
+        )
     }
 }
 

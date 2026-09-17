@@ -154,6 +154,30 @@ class Folder(context: Context) {
             null,
         )?.use { if (it.moveToFirst()) it.getString(0) else null }
 
+    /**
+     * Rename the sheet at [uri], keeping its extension when the reader did not type one.
+     *
+     * The provider hands back a new address, because on most of them the document id
+     * carries the name. Everything holding the old one has to be told, which is why this
+     * returns the sheet rather than a success flag.
+     */
+    fun rename(uri: Uri, wanted: String, was: String): Sheet? {
+        val trimmed = wanted.trim()
+        if (trimmed.isEmpty()) return null
+        val extension = was.substringAfterLast('.', "")
+        val name = if (extension.isNotEmpty() && !trimmed.contains('.')) "$trimmed.$extension" else trimmed
+        if (name == was) return null
+        val moved = DocumentsContract.renameDocument(resolver, uri, name) ?: return null
+        return Sheet(uri = moved, name = nameOf(moved) ?: name, modified = System.currentTimeMillis())
+    }
+
+    /** Remove the sheet. Throws rather than returning false quietly if the provider refuses. */
+    fun delete(uri: Uri) {
+        if (!DocumentsContract.deleteDocument(resolver, uri)) {
+            error("The folder would not delete it.")
+        }
+    }
+
     /** Everything in a sheet, as text. */
     fun read(uri: Uri): String =
         resolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }

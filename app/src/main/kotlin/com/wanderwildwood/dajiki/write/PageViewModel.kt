@@ -446,6 +446,55 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Rename the open sheet.
+     *
+     * Written out first, because the rename moves the address the save would have gone to.
+     * The provider hands back a new one, so the open sheet, the remembered sheet and the
+     * stamp all have to follow it; leaving any of them on the old address is a save that
+     * lands nowhere or a conflict against a file that no longer exists.
+     */
+    fun renameOpen(wanted: String) {
+        val sheet = state.value.opened?.sheet ?: return
+        val text = pending
+        viewModelScope.launch {
+            save(sheet, text)
+            val moved = runCatching {
+                withContext(Dispatchers.IO) { folder.rename(sheet.uri, wanted, sheet.name) }
+            }.getOrElse { reason ->
+                say("${sheet.name} could not be renamed.", reason); return@launch
+            } ?: return@launch
+
+            seen = withContext(Dispatchers.IO) { folder.stamp(moved.uri) }
+            written = text
+            preferences.lastOpen = moved.uri
+            _state.update {
+                it.copy(
+                    opened = Opened(moved, text),
+                    sheets = it.sheets.map { row -> if (row.uri == sheet.uri) moved else row },
+                )
+            }
+        }
+    }
+
+    /**
+     * Remove a sheet from the folder.
+     *
+     * Only ever from the folder screen, so nothing here is open. The remembered sheet is
+     * cleared where it was this one, or the app would try to reopen a file that is gone on
+     * its next start.
+     */
+    fun deleteSheet(sheet: Sheet) {
+        viewModelScope.launch {
+            runCatching { withContext(Dispatchers.IO) { folder.delete(sheet.uri) } }
+                .onSuccess {
+                    if (preferences.lastOpen == sheet.uri) preferences.lastOpen = null
+                    _state.update { it.copy(sheets = it.sheets.filterNot { row -> row.uri == sheet.uri }) }
+                }
+                .onFailure { say("${sheet.name} could not be deleted.", it) }
+        }
+    }
+
     fun setTurn(turn: Turn) {
         preferences.turn = turn
         _state.update { it.copy(turn = turn) }

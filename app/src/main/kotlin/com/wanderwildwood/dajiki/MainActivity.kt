@@ -127,6 +127,7 @@ private fun Typewriter(
             onSaveNow = viewModel::saveNow,
             onNew = viewModel::newSheet,
             onFiles = viewModel::close,
+            onRename = viewModel::renameOpen,
         )
 
         else -> FilesScreen(
@@ -134,6 +135,7 @@ private fun Typewriter(
             onChooseFolder = { choose.launch(state.folder) },
             onOpen = viewModel::open,
             onNew = viewModel::newSheet,
+            onDelete = viewModel::deleteSheet,
             onSettings = { settingsOpen = true },
         )
     }

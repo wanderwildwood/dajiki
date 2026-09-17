@@ -65,6 +65,7 @@ fun PageScreen(
     onSaveNow: () -> Unit,
     onNew: () -> Unit,
     onFiles: () -> Unit,
+    onRename: (String) -> Unit,
 ) {
     // Keyed on the opened sheet, so opening another one starts a fresh field rather than
     // carrying the last one's cursor into it.
@@ -91,6 +92,8 @@ fun PageScreen(
 
     val focus = remember { FocusRequester() }
     LaunchedEffect(opened) { focus.requestFocus() }
+
+    var renaming by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -127,6 +130,15 @@ fun PageScreen(
             words = words,
             unsaved = unsaved,
             onFiles = onFiles,
+            onRename = { renaming = true },
+        )
+    }
+
+    if (renaming) {
+        RenameDialog(
+            name = opened.sheet.name,
+            onRename = onRename,
+            onDismiss = { renaming = false },
         )
     }
 }
@@ -170,7 +182,13 @@ private fun shortcut(
  * the page, and a door nobody finds is a door that is not there.
  */
 @Composable
-private fun Foot(name: String, words: Int, unsaved: Boolean, onFiles: () -> Unit) {
+private fun Foot(
+    name: String,
+    words: Int,
+    unsaved: Boolean,
+    onFiles: () -> Unit,
+    onRename: () -> Unit,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
@@ -193,10 +211,19 @@ private fun Foot(name: String, words: Int, unsaved: Boolean, onFiles: () -> Unit
 
         Spacer(Modifier.weight(1f))
 
+        // The name is the way in to renaming it. A sheet is named for the minute it was
+        // started, which is no name at all by the third one, and the place a reader looks
+        // for what a thing is called is the place it is written.
+        TextMMD(
+            text = name,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .clickable(onClick = onRename)
+                .padding(start = 16.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
+        )
         TextMMD(
             text = buildString {
-                append(name)
-                append(" · ")
+                append("· ")
                 append(if (words == 1) "1 word" else "$words words")
                 // Said in words rather than shown as a dot. A dot on a panel with sixteen
                 // greys is a speck the reader has to learn the meaning of, and this is the
@@ -204,7 +231,7 @@ private fun Foot(name: String, words: Int, unsaved: Boolean, onFiles: () -> Unit
                 if (unsaved) append(" · not saved yet")
             },
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(end = 16.dp, top = 10.dp, bottom = 10.dp),
         )
     }
 }
