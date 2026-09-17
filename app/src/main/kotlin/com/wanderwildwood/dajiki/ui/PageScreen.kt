@@ -30,6 +30,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -176,7 +177,13 @@ private fun shortcut(
         onFiles()
         return true
     }
-    if (!event.isCtrlPressed) return false
+    // Ctrl, and NOT Alt. On a good many layouts AltGr arrives as Ctrl+Alt together, and
+    // without the second half of this test the shortcuts eat the reader's own alphabet: on
+    // the Polish programmer's layout AltGr+S is ś, AltGr+N is ń and AltGr+O is ó, which is
+    // all three of these letters. A Polish writer would have pressed for an accent and been
+    // sent to the folder instead - and Polish is the first language in the store's own list.
+    // Anything held with Alt belongs to the text field, whatever else is held with it.
+    if (!event.isCtrlPressed || event.isAltPressed) return false
     return when (event.key) {
         Key.S -> { onSaveNow(); true }
         Key.N -> { onNew(); true }
