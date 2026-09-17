@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PLACEHOLDER, as the foreground is. The unmasked icon, for anything that will not draw
+     an adaptive one. Same mark on white: pure black, no gradient and no shadow, because
+     anything subtler than that disappears on E Ink. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path android:fillColor="#FFFFFF" android:pathData="M0,0h108v108h-108z" />
+
+    <path
+        android:pathData="M35,31 L73,31 L73,77 L35,77 Z"
+        android:strokeColor="#000000"
+        android:strokeWidth="4" />
+
+    <path android:fillColor="#000000" android:pathData="M43,44h22v3.5h-22z" />
+    <path android:fillColor="#000000" android:pathData="M43,52.5h22v3.5h-22z" />
+    <path android:fillColor="#000000" android:pathData="M43,61h14v3.5h-14z" />
+</vector>

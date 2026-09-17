@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- No permissions. The folder is handed over by the reader through the system's own
+         picker, which grants access to that folder and nothing else, so there is no
+         storage permission to ask for. There is no INTERNET permission either: the one
+         address in the app is opened by handing it to a browser. -->
+
+    <!-- What this app means to look for on the phone. Without it, asking whether anything
+         can open a web address quietly answers no from Android 11 onwards, however many
+         browsers are installed. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.App">
+
+        <!--
+            Landscape is declared here rather than asked for at runtime, which is the whole
+            reason this app exists: an activity that declares its orientation needs nothing
+            running behind it to hold the screen round. A reader whose keyboard case sits
+            the other way up can turn it in Settings, which overrides this at runtime.
+
+            `keyboard` and `keyboardHidden` are in configChanges deliberately. Without them
+            Android destroys and recreates the activity when a Bluetooth keyboard connects
+            or drops, which on a writing app means the reader loses whatever was typed since
+            the last save at the exact moment their keyboard reconnects.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

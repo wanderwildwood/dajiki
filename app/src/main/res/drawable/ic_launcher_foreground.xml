@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PLACEHOLDER. This is ruled geometry, not a drawn mark, and it is here so the project
+     builds and installs - it is not the icon. A sheet with three lines on it says "text
+     file" and nothing about this app that a stranger could not guess.
+
+     The real one gets traced by hand like the others.
+
+     Sized to the masking circle rather than the canvas: the launcher may cut this to any
+     shape it likes and only the central 66 of these 108 units are certain to survive. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- the sheet -->
+    <path
+        android:pathData="M35,31 L73,31 L73,77 L35,77 Z"
+        android:strokeColor="#000000"
+        android:strokeWidth="4" />
+
+    <!-- three ruled lines -->
+    <path android:fillColor="#000000" android:pathData="M43,44h22v3.5h-22z" />
+    <path android:fillColor="#000000" android:pathData="M43,52.5h22v3.5h-22z" />
+    <path android:fillColor="#000000" android:pathData="M43,61h14v3.5h-14z" />
+</vector>
