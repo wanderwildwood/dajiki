@@ -3,6 +3,7 @@ package com.wanderwildwood.dajiki.write
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.webkit.MimeTypeMap
 import android.system.ErrnoException
 import android.system.Os
 import java.io.FileOutputStream
@@ -12,6 +13,45 @@ import java.util.Locale
 
 /** One file in the folder: what it is called, where it is, and when it last changed. */
 data class Sheet(val uri: Uri, val name: String, val modified: Long)
+
+/**
+ * What a sheet looked like from the outside at a moment: when the provider said it last
+ * changed, and how long it was. Either may be missing, and the provider says so with a
+ * number that is not a real one.
+ */
+data class Stamp(val modified: Long, val size: Long)
+
+/**
+ * Whether the sheet changed between two stamps, or null where the stamps cannot say.
+ *
+ * Kept out of [Folder] and away from anything Android so the rule itself can be tested,
+ * because it is the rule that decides whether somebody's afternoon gets overwritten.
+ *
+ * A different length is a change, and that holds even from a provider that dates nothing.
+ * A different date is a change. The same length with no usable dates on either side is the
+ * one case this cannot answer, and it says so rather than guessing "unchanged", which is
+ * the guess that loses work.
+ */
+fun changedBetween(before: Stamp, now: Stamp): Boolean? = when {
+    before.size >= 0 && now.size >= 0 && before.size != now.size -> true
+    before.modified > 0 && now.modified > 0 -> before.modified != now.modified
+    else -> null
+}
+
+/**
+ * What to call the copy holding what was typed here, when the sheet itself has moved on.
+ *
+ * The extension is kept where there is one, so a `.md` that came from a laptop forks to a
+ * `.md` rather than to something the reader's other machine will not recognise.
+ */
+fun besideName(name: String): String {
+    val dot = name.lastIndexOf('.')
+    return if (dot > 0) {
+        "${name.substring(0, dot)} (this phone)${name.substring(dot)}"
+    } else {
+        "$name (this phone)"
+    }
+}
 
 /**
  * The folder the reader chose, and the sheets in it.
@@ -76,6 +116,34 @@ class Folder(context: Context) {
         return known || mime?.startsWith("text/") == true
     }
 
+    /**
+     * How the sheet at [uri] looks from the outside right now, or null if it is not there.
+     *
+     * Asked immediately before a write, and recorded again immediately after one, which is
+     * what lets a sheet that moved on underneath us be told apart from one this app last
+     * wrote itself.
+     */
+    fun stamp(uri: Uri): Stamp? =
+        resolver.query(
+            uri,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+                DocumentsContract.Document.COLUMN_SIZE,
+            ),
+            null,
+            null,
+            null,
+        )?.use {
+            if (!it.moveToFirst()) {
+                null
+            } else {
+                Stamp(
+                    modified = if (it.isNull(0)) 0L else it.getLong(0),
+                    size = if (it.isNull(1)) -1L else it.getLong(1),
+                )
+            }
+        }
+
     /** What the provider calls the document at [uri], or null if it will not say. */
     private fun nameOf(uri: Uri): String? =
         resolver.query(
@@ -125,6 +193,30 @@ class Folder(context: Context) {
                 }
             }
         }
+    }
+
+    /**
+     * A new sheet beside an existing one, under a name this app chose.
+     *
+     * Used for one thing: holding what was typed here when the sheet itself has changed
+     * somewhere else. The type is worked out from the name so that a `.md` forked from a
+     * laptop stays a `.md`; where the phone does not know the extension this falls back to
+     * plain text, and the provider may then add `.txt` on the end of it. An ugly name is an
+     * acceptable price for not having to guess which copy to throw away.
+     */
+    fun createBeside(folder: Uri, name: String): Sheet {
+        val parent = DocumentsContract.buildDocumentUriUsingTree(
+            folder,
+            DocumentsContract.getTreeDocumentId(folder),
+        )
+        val uri = DocumentsContract.createDocument(resolver, parent, mimeFor(name), name)
+            ?: error("The folder would not take a second copy.")
+        return Sheet(uri = uri, name = nameOf(uri) ?: name, modified = System.currentTimeMillis())
+    }
+
+    private fun mimeFor(name: String): String {
+        val extension = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "text/plain"
     }
 
     /**

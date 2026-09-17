@@ -29,6 +29,7 @@ import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.dajiki.write.PageState
+import com.wanderwildwood.dajiki.write.Reading
 import com.wanderwildwood.dajiki.write.Sheet
 
 /**
@@ -60,7 +61,7 @@ fun FilesScreen(
             if (state.folder == null) {
                 NoFolder(onChooseFolder)
             } else {
-                Sheets(state.sheets, onOpen, onNew)
+                Sheets(state.sheets, state.reading, onOpen, onNew)
             }
         }
     }
@@ -98,7 +99,12 @@ private fun NoFolder(onChooseFolder: () -> Unit) {
 }
 
 @Composable
-private fun Sheets(sheets: List<Sheet>, onOpen: (Sheet) -> Unit, onNew: () -> Unit) {
+private fun Sheets(
+    sheets: List<Sheet>,
+    reading: Reading,
+    onOpen: (Sheet) -> Unit,
+    onNew: () -> Unit,
+) {
     LazyColumnMMD(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp),
@@ -125,8 +131,16 @@ private fun Sheets(sheets: List<Sheet>, onOpen: (Sheet) -> Unit, onNew: () -> Un
 
         if (sheets.isEmpty()) {
             item {
+                // Three states, not two. A cold start can take the better part of ten
+                // seconds to get the folder back, and "nothing here" during those seconds
+                // tells a writer their work is gone. A word rather than a spinner: nothing
+                // on this panel animates.
                 TextMMD(
-                    text = "Nothing in this folder yet.",
+                    text = when (reading) {
+                        Reading.NOT_YET -> "Reading the folder…"
+                        Reading.DONE -> "Nothing in this folder yet."
+                        Reading.FAILED -> "That folder could not be read."
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(vertical = 14.dp),
                 )

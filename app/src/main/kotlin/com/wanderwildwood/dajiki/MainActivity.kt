@@ -65,14 +65,23 @@ private fun Typewriter(
     }
 
     /*
-     * Write the page out when the app stops. The pause between keystrokes catches almost
-     * everything; this catches the rest — the reader who types a sentence and immediately
-     * presses home, and the app that is killed for memory a moment later.
+     * Write the page out when the app stops, and look for a newer copy when it starts.
+     *
+     * The pause between keystrokes catches almost every save; this catches the rest — the
+     * reader who types a sentence and immediately presses home, and the app that is killed
+     * for memory a moment later.
      */
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val watcher = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) viewModel.saveNow()
+            when (event) {
+                Lifecycle.Event.ON_STOP -> viewModel.saveNow()
+                // Coming back is when a sync has most likely been and gone. If the open
+                // sheet moved on while the app was away and nothing here is unsaved, this
+                // shows what arrived rather than letting the next keystroke write over it.
+                Lifecycle.Event.ON_START -> viewModel.resumed()
+                else -> Unit
+            }
         }
         lifecycleOwner.lifecycle.addObserver(watcher)
         onDispose { lifecycleOwner.lifecycle.removeObserver(watcher) }

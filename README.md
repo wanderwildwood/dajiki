@@ -40,6 +40,14 @@ line needed to be attached to.
   already does correctly, untouched.
 - **Saves two seconds after you stop typing**, and again on the way out of the app. The foot
   of the page says when what you see is not yet on disk.
+- **Never writes over a sheet that changed somewhere else.** The folder is meant to be one a
+  sync app owns, so the ordinary case is a laptop editing the same sheet while the phone has
+  it open. Before every save the sheet is checked against what it looked like when this app
+  last touched it; if it has moved on, nothing is written over it and what you typed goes
+  into `<name> (this phone).txt` beside it, which the page then follows. You get both copies
+  and sort it out on a machine with a screen — you are never asked to choose between two
+  versions on a 4.3" panel, mid-sentence, with no way to see what the other one says.
+  Coming back to the app with nothing unsaved simply shows whatever arrived.
 - **Counts the words**, a moment behind the typing rather than on every keystroke, because
   repainting the foot of an E Ink panel on every character is a flicker you would watch all
   afternoon.
@@ -47,15 +55,26 @@ line needed to be attached to.
 ## What it does not do
 
 No permissions at all. No network — the one web address in the app is handed to a browser.
-No formatting, no preview, no spellcheck, no themes, no sync. It does not rename a sheet: a
-new one is named for the date and time it was started, and any file manager will rename it.
+No formatting, no preview, no spellcheck, no themes. It does not sync, and does not want to:
+it writes files into a folder, and whatever already syncs that folder does the rest. It does
+not merge two versions of a sheet either — it keeps both and says so. And it does not rename:
+a new sheet is named for the date and time it was started, and any file manager will rename
+it.
 
 ## Where this is up to
 
-Version 0.1.0. The word count is unit tested and every screen has been driven, but **nobody
-has written anything real in it yet** — no afternoon's work has gone through it, and that is
-the test that matters for a writing app. The save path is the part to be suspicious of, and
-it is the part that would cost the most.
+Version 0.1.0. The word count and the change-detection rules are unit tested, every screen
+has been driven on a device, and the save path has been checked against the things that
+actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
+sheet that changed underneath the app is copied rather than overwritten.
+
+What has **not** happened is anybody writing anything real in it. No afternoon's work has
+gone through it, which is the test that matters for a writing app.
+
+The Ctrl shortcuts are the one thing not confirmed on hardware. The keys and the modifier
+state are both known to reach the app, but the emulator this was driven on uses a keyboard
+layout with no Ctrl key on it, so the Ctrl combinations themselves have only been reasoned
+about. A real Bluetooth keyboard settles it in ten seconds.
 
 The icon is a placeholder.
 
