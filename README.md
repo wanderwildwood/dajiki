@@ -59,6 +59,11 @@ line needed to be attached to.
 - **Counts the words**, a moment behind the typing rather than on every keystroke, because
   repainting the foot of an E Ink panel on every character is a flicker you would watch all
   afternoon.
+- **Three text sizes**, set from the foot of the page as well as from Settings, because the
+  size of a page is a question you can only answer while looking at the page. One size sets
+  every sheet unless you ask for the other thing, and then a sheet keeps the size you set on
+  it. A size follows a sheet that is renamed here; a sheet renamed by another app comes back
+  at the setting.
 
 ## What it does not do
 
@@ -70,13 +75,12 @@ is a lock rather than a key. PRIVACY.md says so at length.) No network — the o
 the app is handed to a browser.
 No formatting, no preview, no spellcheck, no themes. It does not sync, and does not want to:
 it writes files into a folder, and whatever already syncs that folder does the rest. It does
-not merge two versions of a sheet either — it keeps both and says so. And it does not rename:
-a new sheet is named for the date and time it was started, and any file manager will rename
-it.
+not merge two versions of a sheet either — it keeps both and says so.
 
 ## Where this is up to
 
-Version 0.1.0. The word count and the change-detection rules are unit tested, every screen
+Version 0.1.3. The word count, the change-detection rules and the size a page opens at are
+unit tested, every screen
 has been driven on a device, and the save path has been checked against the things that
 actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
 sheet that changed underneath the app is copied rather than overwritten.
@@ -94,8 +98,6 @@ Ctrl-S wrote the sheet before the pause could have, Ctrl-N started one, and Esca
 the page. That took some getting at: the emulator's keyboard uses a layout with no Ctrl key
 defined in it at all, so every combination arrived as a bare letter until the layout was
 replaced.
-
-The icon is a placeholder.
 
 ## Building
 
