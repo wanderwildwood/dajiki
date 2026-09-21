@@ -15,7 +15,7 @@ already ships with.
 | | |
 |---|---|
 | ![The page, and nothing else](screenshots/1-page.png) | ![A folder of sheets](screenshots/2-files.png) |
-| ![Three things to set](screenshots/3-settings.png) | ![Where the writing lives](screenshots/4-about.png) |
+| ![What there is to set](screenshots/3-settings.png) | ![Where the writing lives](screenshots/4-about.png) |
 
 *Turned a quarter, because the screen is landscape and this page is not. Tilt your head to
 the right.*
