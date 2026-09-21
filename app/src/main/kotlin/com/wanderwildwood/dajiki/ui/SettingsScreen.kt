@@ -7,9 +7,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
@@ -57,47 +58,59 @@ fun SettingsScreen(
             )
         },
     ) { contentPadding ->
-        Column(
+        // MMD's list rather than a plain Column: four rows fit the panel held across only
+        // while nothing grows. A reader who has turned the system font size up wraps the note
+        // under "Count the words" onto a second line, and that one line was enough to push
+        // "Text size" off the bottom edge, where it could be neither seen nor pressed. A
+        // list carries whatever the rows come to, and brings the chevron rail that says so.
+        LazyColumnMMD(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPadding)
-                .padding(horizontal = 20.dp),
+                .padding(contentPadding),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
         ) {
-            Spacer(Modifier.height(12.dp))
-
-            Setting(
-                title = "Folder",
-                value = state.folder?.let(::folderName) ?: "None chosen",
-                onClick = onChooseFolder,
-            )
-            Setting(
-                title = "Which way round",
-                value = when (state.turn) {
-                    Turn.ACROSS -> "Across"
-                    Turn.AROUND -> "Across, turned around"
-                    Turn.DEVICE -> "However the device is held"
-                },
-                onClick = { onTurn(next(state.turn)) },
-            )
-            Toggle(
-                title = "Count the words",
-                // The one setting whose reason a label cannot carry, so it gets the second
-                // line the house style reserves for exactly that: the count is runs of
-                // non-whitespace, and that is not what a word is in every language.
-                note = "Counted as runs between spaces, so it is wrong for a language that " +
-                    "does not use them.",
-                checked = state.wordCount,
-                onClick = onWordCount,
-            )
-            Setting(
-                title = "Text size",
-                value = when (state.size) {
-                    Size.SMALL -> "Small"
-                    Size.MEDIUM -> "Medium"
-                    Size.LARGE -> "Large"
-                },
-                onClick = { onSize(next(state.size)) },
-            )
+            item {
+                Setting(
+                    title = "Folder",
+                    value = state.folder?.let(::folderName) ?: "None chosen",
+                    onClick = onChooseFolder,
+                )
+            }
+            item {
+                Setting(
+                    title = "Which way round",
+                    value = when (state.turn) {
+                        Turn.ACROSS -> "Across"
+                        Turn.AROUND -> "Across, turned around"
+                        Turn.DEVICE -> "However the device is held"
+                    },
+                    onClick = { onTurn(next(state.turn)) },
+                )
+            }
+            item {
+                Toggle(
+                    title = "Count the words",
+                    // The one setting whose reason a label cannot carry, so it gets the
+                    // second line the house style reserves for exactly that: the count is
+                    // runs of non-whitespace, and that is not what a word is in every
+                    // language.
+                    note = "Counted as runs between spaces, so it is wrong for a language " +
+                        "that does not use them.",
+                    checked = state.wordCount,
+                    onClick = onWordCount,
+                )
+            }
+            item {
+                Setting(
+                    title = "Text size",
+                    value = when (state.size) {
+                        Size.SMALL -> "Small"
+                        Size.MEDIUM -> "Medium"
+                        Size.LARGE -> "Large"
+                    },
+                    onClick = { onSize(next(state.size)) },
+                )
+            }
         }
     }
 
@@ -133,7 +146,7 @@ private fun Toggle(title: String, note: String, checked: Boolean, onClick: () ->
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
@@ -150,7 +163,7 @@ private fun Setting(title: String, value: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp),
     ) {
         TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
         TextMMD(text = value, style = MaterialTheme.typography.labelSmall)

@@ -21,7 +21,13 @@ enum class Turn(val activityInfo: Int) {
     DEVICE(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED),
 }
 
-/** How large the text on the page is set. Three steps of MMD's own scale, not three numbers. */
+/**
+ * How large the text on the page is set.
+ *
+ * Three steps of MMD's own scale, not three numbers — but three taken from across it rather
+ * than three neighbours on the body ramp. What the page is set to is read for hours; what the
+ * ramp was built for is a label on a row.
+ */
 enum class Size { SMALL, MEDIUM, LARGE }
 
 /** The three things there are to set, and the folder the reader chose once. */

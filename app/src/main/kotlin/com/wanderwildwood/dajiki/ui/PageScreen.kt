@@ -126,10 +126,18 @@ fun PageScreen(
         BasicTextField(
             state = field,
             lineLimits = TextFieldLineLimits.MultiLine(),
+            /*
+             * Three steps of the house scale, taken far enough apart to be worth choosing
+             * between. The body ramp is not: bodySmall, bodyMedium and bodyLarge are 15, 18
+             * and 20sp, which on this panel measured 17, 20 and 21 pixels of cap height —
+             * one pixel between Medium and Large, and a reader who moved the setting and saw
+             * nothing move reported the setting as broken. That ramp sizes a label beside a
+             * switch; this is the text somebody reads at arm's length for an afternoon.
+             */
             textStyle = when (size) {
                 Size.SMALL -> MaterialTheme.typography.bodySmall
-                Size.MEDIUM -> MaterialTheme.typography.bodyMedium
-                Size.LARGE -> MaterialTheme.typography.bodyLarge
+                Size.MEDIUM -> MaterialTheme.typography.bodyLarge
+                Size.LARGE -> MaterialTheme.typography.headlineLarge
             }.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
             modifier = Modifier
