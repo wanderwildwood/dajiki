@@ -27,14 +27,15 @@ import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Size
+import com.wanderwildwood.dajiki.write.next
 import com.wanderwildwood.dajiki.write.Turn
 
 /**
- * The three things there are to set.
+ * What there is to set.
  *
- * Each row says what it is set to, and a press moves it on to the next value. Three settings
- * do not want a screen each, and a picker is two full repaints to choose between three things
- * that already fit on the row.
+ * Each row says what it is set to, and a press moves it on to the next value. These do not
+ * want a screen each, and a picker is two full repaints to choose between three things that
+ * already fit on the row.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +45,7 @@ fun SettingsScreen(
     onChooseFolder: () -> Unit,
     onTurn: (Turn) -> Unit,
     onSize: (Size) -> Unit,
+    onSizePerSheet: () -> Unit,
     onWordCount: () -> Unit,
 ) {
     var aboutOpen by remember { mutableStateOf(false) }
@@ -111,15 +113,23 @@ fun SettingsScreen(
                     onClick = { onSize(next(state.size)) },
                 )
             }
+            item {
+                Toggle(
+                    title = "Each sheet its own size",
+                    // The other setting whose cost a label cannot carry. What it does is
+                    // plain; what it is held against is not. A size belongs to the sheet's
+                    // address, so a rename here carries it and a sheet renamed by another
+                    // app comes back at the size above.
+                    note = "The size set on a page stays with that sheet. Off, one size " +
+                        "sets them all.",
+                    checked = state.sizePerSheet,
+                    onClick = onSizePerSheet,
+                )
+            }
         }
     }
 
     if (aboutOpen) AboutDialog(onDismiss = { aboutOpen = false })
-}
-
-private inline fun <reified T : Enum<T>> next(current: T): T {
-    val all = enumValues<T>()
-    return all[(current.ordinal + 1) % all.size]
 }
 
 /**

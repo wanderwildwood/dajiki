@@ -36,6 +36,8 @@ data class PageState(
     val unsaved: Boolean = false,
     val turn: Turn = Turn.ACROSS,
     val size: Size = Size.MEDIUM,
+    /** Whether [size] belongs to the open sheet or to every sheet. */
+    val sizePerSheet: Boolean = false,
     val wordCount: Boolean = true,
     /** Something that went wrong, in words, shown until it is read and dismissed. */
     val trouble: String? = null,
@@ -51,6 +53,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             folder = preferences.folder,
             turn = preferences.turn,
             size = preferences.size,
+            sizePerSheet = preferences.sizePerSheet,
             wordCount = preferences.wordCount,
         ),
     )
@@ -178,7 +181,13 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                     written = text
                     stalled = false
                     preferences.lastOpen = sheet.uri
-                    _state.update { it.copy(opened = Opened(sheet, text), unsaved = false) }
+                    _state.update {
+                        it.copy(
+                            opened = Opened(sheet, text),
+                            unsaved = false,
+                            size = sizeOpening(sheet.uri),
+                        )
+                    }
                 }
                 .onFailure { say("${sheet.name} could not be opened.", it) }
         }
@@ -200,6 +209,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                             opened = Opened(sheet, ""),
                             sheets = listOf(sheet) + it.sheets,
                             unsaved = false,
+                            size = sizeOpening(sheet.uri),
                         )
                     }
                 }
@@ -384,6 +394,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 // into a sheet they did not open would be its own small betrayal.
                 val stillReading = state.value.opened != null
                 if (stillReading) preferences.lastOpen = copy.uri
+                preferences.copySize(sheet.uri, copy.uri)
 
                 _state.update {
                     it.copy(
@@ -470,6 +481,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             seen = withContext(Dispatchers.IO) { folder.stamp(moved.uri) }
             written = text
             preferences.lastOpen = moved.uri
+            preferences.moveSize(sheet.uri, moved.uri)
             _state.update {
                 it.copy(
                     opened = Opened(moved, text),
@@ -491,6 +503,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             runCatching { withContext(Dispatchers.IO) { folder.delete(sheet.uri) } }
                 .onSuccess {
                     if (preferences.lastOpen == sheet.uri) preferences.lastOpen = null
+                    preferences.forgetSize(sheet.uri)
                     _state.update { it.copy(sheets = it.sheets.filterNot { row -> row.uri == sheet.uri }) }
                 }
                 .onFailure { say("${sheet.name} could not be deleted.", it) }
@@ -508,10 +521,60 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { it.copy(turn = turn) }
     }
 
+    /**
+     * The size, set from Settings, where no sheet is open.
+     *
+     * This is the setting itself: what a sheet with no size of its own is shown at, which
+     * with the scope off is all of them.
+     */
     fun setSize(size: Size) {
         preferences.size = size
+        _state.update { it.copy(size = if (it.sizePerSheet) it.size else size) }
+    }
+
+    /**
+     * The size, set from the page, where the text it sizes is the thing on the screen.
+     *
+     * Which of the two it writes is the whole of the scope setting: with it on the size
+     * belongs to this sheet and the rest are left alone; with it off there is one size and
+     * this is it.
+     */
+    fun setSizeHere(size: Size) {
+        val open = state.value.opened?.sheet?.uri
+        if (state.value.sizePerSheet && open != null) {
+            preferences.setSizeOf(open, size)
+        } else {
+            preferences.size = size
+        }
         _state.update { it.copy(size = size) }
     }
+
+    /**
+     * Turn the scope over.
+     *
+     * Sizes already set on sheets are kept rather than cleared, so turning this off and on
+     * again finds them where they were. Turning it off shows the setting's size at once,
+     * because that is what every sheet is now, including the one being read.
+     */
+    fun toggleSizePerSheet() {
+        val wanted = !state.value.sizePerSheet
+        preferences.sizePerSheet = wanted
+        val open = state.value.opened?.sheet?.uri
+        _state.update {
+            it.copy(
+                sizePerSheet = wanted,
+                size = if (wanted && open != null) sizeOpening(open) else preferences.size,
+            )
+        }
+    }
+
+    /** What a sheet is shown at, by the rule in [sizeFor]. */
+    private fun sizeOpening(sheet: Uri): Size =
+        sizeFor(
+            perSheet = preferences.sizePerSheet,
+            own = preferences.sizeOf(sheet),
+            setting = preferences.size,
+        )
 
     fun troubleRead() = _state.update { it.copy(trouble = null) }
 

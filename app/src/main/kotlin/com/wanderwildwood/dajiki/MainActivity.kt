@@ -117,6 +117,7 @@ private fun Typewriter(
             onChooseFolder = { choose.launch(state.folder) },
             onTurn = viewModel::setTurn,
             onSize = viewModel::setSize,
+            onSizePerSheet = viewModel::toggleSizePerSheet,
             onWordCount = viewModel::toggleWordCount,
         )
 
@@ -130,6 +131,7 @@ private fun Typewriter(
             onNew = viewModel::newSheet,
             onFiles = viewModel::close,
             onRename = viewModel::renameOpen,
+            onSize = viewModel::setSizeHere,
         )
 
         else -> FilesScreen(

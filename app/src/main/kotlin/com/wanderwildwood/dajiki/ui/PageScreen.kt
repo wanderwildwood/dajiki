@@ -41,6 +41,7 @@ import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.wanderwildwood.dajiki.write.Opened
 import com.wanderwildwood.dajiki.write.Size
+import com.wanderwildwood.dajiki.write.next
 import com.wanderwildwood.dajiki.write.countWords
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -71,6 +72,7 @@ fun PageScreen(
     onNew: () -> Unit,
     onFiles: () -> Unit,
     onRename: (String) -> Unit,
+    onSize: (Size) -> Unit,
 ) {
     /*
      * The text lives in a TextFieldState rather than in a value this screen hands back and
@@ -153,8 +155,10 @@ fun PageScreen(
             name = opened.sheet.name,
             words = words.takeIf { showWordCount },
             unsaved = unsaved,
+            size = size,
             onFiles = onFiles,
             onRename = { renaming = true },
+            onSize = { onSize(next(size)) },
         )
     }
 
@@ -235,8 +239,10 @@ private fun Foot(
     name: String,
     words: Int?,
     unsaved: Boolean,
+    size: Size,
     onFiles: () -> Unit,
     onRename: () -> Unit,
+    onSize: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -257,6 +263,22 @@ private fun Foot(
             Spacer(Modifier.width(6.dp))
             TextMMD(text = "Files", style = MaterialTheme.typography.labelSmall)
         }
+
+        // The size, where the text it sizes is on the screen to judge it by. Settings has
+        // the same three steps and is where a reader who has not found this one will look,
+        // but the size of a page is a question you can only answer while looking at the page.
+        // The word rather than a glyph: a row here says what it is, the same as any other.
+        TextMMD(
+            text = when (size) {
+                Size.SMALL -> "Small"
+                Size.MEDIUM -> "Medium"
+                Size.LARGE -> "Large"
+            },
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .clickable(onClick = onSize)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        )
 
         Spacer(Modifier.weight(1f))
 

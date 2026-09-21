@@ -30,6 +30,23 @@ enum class Turn(val activityInfo: Int) {
  */
 enum class Size { SMALL, MEDIUM, LARGE }
 
+/**
+ * What a sheet is shown at: its own size where it has one and sizes are kept per sheet,
+ * and the setting otherwise.
+ *
+ * Apart from the store so the rule can be read and tested on its own. The two ways of
+ * getting it wrong are both quiet: a sheet with no size of its own showing something other
+ * than the setting, and a size set on one sheet following the reader into the next.
+ */
+fun sizeFor(perSheet: Boolean, own: Size?, setting: Size): Size =
+    if (perSheet) own ?: setting else setting
+
+/** The next step of a setting that cycles, wrapping round at the end. */
+inline fun <reified T : Enum<T>> next(current: T): T {
+    val all = enumValues<T>()
+    return all[(current.ordinal + 1) % all.size]
+}
+
 /** The three things there are to set, and the folder the reader chose once. */
 class Preferences(context: Context) {
 
@@ -56,6 +73,51 @@ class Preferences(context: Context) {
         set(value) = store.edit().putString(SIZE, value.name).apply()
 
     /**
+     * Whether a sheet keeps a size of its own, or one size sets them all.
+     *
+     * Off is the default and the simpler thing: the size is a property of the reader's eyes,
+     * not of the writing. On is for a folder where the sheets are not all the same job — a
+     * long draft read at arm's length and a page of notes squinted at close to.
+     */
+    var sizePerSheet: Boolean
+        get() = store.getBoolean(SIZE_PER_SHEET, false)
+        set(value) = store.edit().putBoolean(SIZE_PER_SHEET, value).apply()
+
+    /**
+     * The size a particular sheet has been set to, or null where it has never been set.
+     *
+     * Kept here rather than beside the writing. A sidecar file in the reader's folder would
+     * be the tidier answer to look at and the wrong one to live with: the folder is theirs,
+     * it may be synced, and what is in it should be the sheets and nothing else.
+     *
+     * ⚠ The key is the document address, which is what the provider hands back and not
+     * anything about the name. That is why [moveSize] exists: a rename gives the sheet a new
+     * address, and without carrying the size across, changing a sheet's name would silently
+     * reset how it looks.
+     */
+    fun sizeOf(sheet: Uri): Size? =
+        store.getString(SIZE_OF + sheet, null)
+            ?.let { name -> runCatching { Size.valueOf(name) }.getOrNull() }
+
+    fun setSizeOf(sheet: Uri, size: Size) =
+        store.edit().putString(SIZE_OF + sheet, size.name).apply()
+
+    /** A sheet that is gone takes its size with it, rather than leaving a key behind. */
+    fun forgetSize(sheet: Uri) = store.edit().remove(SIZE_OF + sheet).apply()
+
+    /** A renamed sheet is the same writing at a new address, so the size follows it. */
+    fun moveSize(from: Uri, to: Uri) {
+        val size = sizeOf(from) ?: return
+        store.edit().remove(SIZE_OF + from).putString(SIZE_OF + to, size.name).apply()
+    }
+
+    /** A sheet forked in a conflict is a copy of the writing, so the size is copied too. */
+    fun copySize(from: Uri, to: Uri) {
+        val size = sizeOf(from) ?: return
+        setSizeOf(to, size)
+    }
+
+    /**
      * Whether the foot of the page counts the words.
      *
      * Off is a real answer, not a tidying preference. The count is runs of non-whitespace,
@@ -76,6 +138,8 @@ class Preferences(context: Context) {
         const val FOLDER = "folder"
         const val TURN = "turn"
         const val SIZE = "size"
+        const val SIZE_PER_SHEET = "size_per_sheet"
+        const val SIZE_OF = "size_of:"
         const val WORD_COUNT = "word_count"
         const val LAST_OPEN = "last_open"
     }
