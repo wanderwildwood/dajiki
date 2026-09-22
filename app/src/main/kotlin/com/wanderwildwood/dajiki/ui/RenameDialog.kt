@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.text_field.TextFieldMMD
+import com.wanderwildwood.dajiki.R
 
 /**
  * Give the sheet a name.
@@ -57,7 +59,7 @@ fun RenameDialog(name: String, onRename: (String) -> Unit, onDismiss: () -> Unit
 
     EInkDialog(onDismiss = onDismiss) {
         TextMMD(
-            text = "Name this sheet",
+            text = stringResource(R.string.rename_title),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
@@ -85,14 +87,14 @@ fun RenameDialog(name: String, onRename: (String) -> Unit, onDismiss: () -> Unit
             OutlinedButtonMMD(
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f).height(48.dp),
-            ) { TextMMD(text = "Cancel", style = MaterialTheme.typography.bodySmall) }
+            ) { TextMMD(text = stringResource(R.string.rename_cancel), style = MaterialTheme.typography.bodySmall) }
 
             Spacer(Modifier.width(10.dp))
 
             OutlinedButtonMMD(
                 onClick = commit,
                 modifier = Modifier.weight(1f).height(48.dp),
-            ) { TextMMD(text = "Rename", style = MaterialTheme.typography.bodySmall) }
+            ) { TextMMD(text = stringResource(R.string.rename_confirm), style = MaterialTheme.typography.bodySmall) }
         }
     }
 }

@@ -20,11 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
+import com.wanderwildwood.dajiki.R
 import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.next
@@ -54,9 +56,9 @@ fun SettingsScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBarMMD(
-                title = { TextMMD(text = "Settings") },
-                navigationIcon = { BarButton(Icons.Close, "Close", onClose) },
-                actions = { BarButton(Icons.Info, "About", { aboutOpen = true }) },
+                title = { TextMMD(text = stringResource(R.string.settings_title)) },
+                navigationIcon = { BarButton(Icons.Close, stringResource(R.string.settings_cd_close), onClose) },
+                actions = { BarButton(Icons.Info, stringResource(R.string.settings_cd_about), { aboutOpen = true }) },
             )
         },
     ) { contentPadding ->
@@ -73,55 +75,53 @@ fun SettingsScreen(
         ) {
             item {
                 Setting(
-                    title = "Folder",
-                    value = state.folder?.let(::folderName) ?: "None chosen",
+                    title = stringResource(R.string.settings_folder),
+                    value = state.folder?.let(::folderName) ?: stringResource(R.string.settings_folder_none),
                     onClick = onChooseFolder,
                 )
             }
             item {
                 Setting(
-                    title = "Which way round",
+                    title = stringResource(R.string.settings_turn),
                     value = when (state.turn) {
-                        Turn.ACROSS -> "Across"
-                        Turn.AROUND -> "Across, turned around"
-                        Turn.DEVICE -> "However the device is held"
+                        Turn.ACROSS -> stringResource(R.string.settings_turn_across)
+                        Turn.AROUND -> stringResource(R.string.settings_turn_around)
+                        Turn.DEVICE -> stringResource(R.string.settings_turn_device)
                     },
                     onClick = { onTurn(next(state.turn)) },
                 )
             }
             item {
                 Toggle(
-                    title = "Count the words",
+                    title = stringResource(R.string.settings_word_count),
                     // The one setting whose reason a label cannot carry, so it gets the
                     // second line the house style reserves for exactly that: the count is
                     // runs of non-whitespace, and that is not what a word is in every
                     // language.
-                    note = "Counted as runs between spaces, so it is wrong for a language " +
-                        "that does not use them.",
+                    note = stringResource(R.string.settings_word_count_note),
                     checked = state.wordCount,
                     onClick = onWordCount,
                 )
             }
             item {
                 Setting(
-                    title = "Text size",
+                    title = stringResource(R.string.settings_text_size),
                     value = when (state.size) {
-                        Size.SMALL -> "Small"
-                        Size.MEDIUM -> "Medium"
-                        Size.LARGE -> "Large"
+                        Size.SMALL -> stringResource(R.string.text_size_small)
+                        Size.MEDIUM -> stringResource(R.string.text_size_medium)
+                        Size.LARGE -> stringResource(R.string.text_size_large)
                     },
                     onClick = { onSize(next(state.size)) },
                 )
             }
             item {
                 Toggle(
-                    title = "Each sheet its own size",
+                    title = stringResource(R.string.settings_size_per_sheet),
                     // The other setting whose cost a label cannot carry. What it does is
                     // plain; what it is held against is not. A size belongs to the sheet's
                     // address, so a rename here carries it and a sheet renamed by another
                     // app comes back at the size above.
-                    note = "The size set on a page stays with that sheet. Off, one size " +
-                        "sets them all.",
+                    note = stringResource(R.string.settings_size_per_sheet_note),
                     checked = state.sizePerSheet,
                     onClick = onSizePerSheet,
                 )

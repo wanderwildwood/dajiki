@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -165,6 +166,6 @@ private fun Trouble(words: String, onRead: () -> Unit) {
         OutlinedButtonMMD(
             onClick = onRead,
             modifier = Modifier.fillMaxWidth().height(48.dp),
-        ) { TextMMD(text = "Close", style = MaterialTheme.typography.bodySmall) }
+        ) { TextMMD(text = stringResource(R.string.trouble_close), style = MaterialTheme.typography.bodySmall) }
     }
 }

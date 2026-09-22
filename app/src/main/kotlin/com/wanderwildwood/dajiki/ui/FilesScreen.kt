@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
@@ -34,6 +35,7 @@ import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
+import com.wanderwildwood.dajiki.R
 import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Reading
 import com.wanderwildwood.dajiki.write.Sheet
@@ -59,8 +61,8 @@ fun FilesScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBarMMD(
-                title = { TextMMD(text = "Typewriter") },
-                actions = { BarButton(Icons.Settings, "Settings", onSettings) },
+                title = { TextMMD(text = stringResource(R.string.app_name)) },
+                actions = { BarButton(Icons.Settings, stringResource(R.string.files_cd_settings), onSettings) },
             )
         },
     ) { contentPadding ->
@@ -87,21 +89,20 @@ private fun NoFolder(onChooseFolder: () -> Unit) {
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {
         TextMMD(
-            text = "Choose a folder to write in.",
+            text = stringResource(R.string.files_no_folder_title),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
         Spacer(Modifier.height(8.dp))
         TextMMD(
-            text = "Your writing stays there as ordinary text files, which any other app on " +
-                "the phone can open. Nothing is kept inside this one.",
+            text = stringResource(R.string.files_no_folder_body),
             style = MaterialTheme.typography.labelSmall,
         )
         Spacer(Modifier.height(20.dp))
         OutlinedButtonMMD(
             onClick = onChooseFolder,
             modifier = Modifier.fillMaxWidth().height(48.dp),
-        ) { TextMMD(text = "Choose a folder", style = MaterialTheme.typography.bodySmall) }
+        ) { TextMMD(text = stringResource(R.string.files_choose_folder), style = MaterialTheme.typography.bodySmall) }
     }
 }
 
@@ -132,7 +133,7 @@ private fun Sheets(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(10.dp))
-                TextMMD(text = "New sheet", style = MaterialTheme.typography.bodyMedium)
+                TextMMD(text = stringResource(R.string.files_new_sheet), style = MaterialTheme.typography.bodyMedium)
             }
             HorizontalDividerMMD()
         }
@@ -145,9 +146,9 @@ private fun Sheets(
                 // on this panel animates.
                 TextMMD(
                     text = when (reading) {
-                        Reading.NOT_YET -> "Reading the folder…"
-                        Reading.DONE -> "Nothing in this folder yet."
-                        Reading.FAILED -> "That folder could not be read."
+                        Reading.NOT_YET -> stringResource(R.string.files_reading)
+                        Reading.DONE -> stringResource(R.string.files_empty)
+                        Reading.FAILED -> stringResource(R.string.files_read_failed)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(vertical = 14.dp),
@@ -188,14 +189,21 @@ private fun SheetRow(sheet: Sheet, onOpen: () -> Unit, onDelete: () -> Unit) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             TextMMD(
-                text = if (armed) "Delete this sheet — tap again" else sheet.name,
+                text = if (armed) stringResource(R.string.files_delete_armed) else sheet.name,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            TextMMD(text = when_(sheet.modified), style = MaterialTheme.typography.labelSmall)
+            TextMMD(
+                text = when_(
+                    sheet.modified,
+                    stringResource(R.string.files_not_dated),
+                    stringResource(R.string.files_just_now),
+                ),
+                style = MaterialTheme.typography.labelSmall,
+            )
         }
         Icon(
             imageVector = Icons.Delete,
-            contentDescription = if (armed) "Delete this sheet — tap again" else "Delete this sheet",
+            contentDescription = if (armed) stringResource(R.string.files_delete_armed) else stringResource(R.string.files_cd_delete),
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .size(24.dp)
@@ -210,12 +218,12 @@ private fun SheetRow(sheet: Sheet, onOpen: () -> Unit, onDelete: () -> Unit) {
  * A provider that keeps no modification time reports zero, and "56 years ago" is worse than
  * saying nothing, so that case says nothing.
  */
-private fun when_(modified: Long): String {
-    if (modified <= 0L) return "Not dated"
+private fun when_(modified: Long, notDated: String, justNow: String): String {
+    if (modified <= 0L) return notDated
     val ago = System.currentTimeMillis() - modified
     // Android's own phrasing for anything under a minute is "0 minutes ago", which is not
     // a thing anyone says, and it is the line the sheet you just closed will be showing.
-    if (ago in 0 until DateUtils.MINUTE_IN_MILLIS) return "Just now"
+    if (ago in 0 until DateUtils.MINUTE_IN_MILLIS) return justNow
     return DateUtils.getRelativeTimeSpanString(
         modified,
         System.currentTimeMillis(),

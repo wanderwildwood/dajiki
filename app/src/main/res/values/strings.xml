@@ -1,4 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Typewriter</string>
+
+    <!-- ============================================================ -->
+    <!-- Files screen: the folder and the sheets in it -->
+
+    <!-- Top bar: icon description read aloud by a screen reader -->
+    <string name="files_cd_settings">Settings</string>
+    <!-- Shown before any folder has been chosen -->
+    <string name="files_no_folder_title">Choose a folder to write in.</string>
+    <string name="files_no_folder_body">Your writing stays there as ordinary text files, which any other app on the phone can open. Nothing is kept inside this one.</string>
+    <!-- Button that opens the system folder picker -->
+    <string name="files_choose_folder">Choose a folder</string>
+    <!-- The row at the top of the list that starts a new, empty text file ("sheet" = a sheet of paper) -->
+    <string name="files_new_sheet">New sheet</string>
+    <!-- Shown in place of the list while the folder is still being read -->
+    <string name="files_reading">Reading the folder…</string>
+    <string name="files_empty">Nothing in this folder yet.</string>
+    <string name="files_read_failed">That folder could not be read.</string>
+    <!-- A sheet's delete button has been pressed once; pressing it again deletes. Also the screen-reader description of the button in that state -->
+    <string name="files_delete_armed">Delete this sheet — tap again</string>
+    <!-- Screen-reader description of the delete button -->
+    <string name="files_cd_delete">Delete this sheet</string>
+    <!-- Under a sheet's name, when the storage keeps no modification time for it -->
+    <string name="files_not_dated">Not dated</string>
+    <!-- Under a sheet's name, when it was written to less than a minute ago -->
+    <string name="files_just_now">Just now</string>
+
+    <!-- ============================================================ -->
+    <!-- The page: the line at the foot of the writing surface -->
+
+    <!-- The way back to the list of files (noun, plural) -->
+    <string name="page_files">Files</string>
+    <!-- The word count at the foot of the page -->
+    <plurals name="page_word_count">
+        <item quantity="one">%d word</item>
+        <item quantity="other">%d words</item>
+    </plurals>
+    <!-- After the word count, while there are changes not yet written to the file. Starts with a middle dot separator -->
+    <string name="page_not_saved">· not saved yet</string>
+
+    <!-- Text sizes: in Settings and at the foot of the page -->
+    <string name="text_size_small">Small</string>
+    <string name="text_size_medium">Medium</string>
+    <string name="text_size_large">Large</string>
+
+    <!-- Rename dialog -->
+    <string name="rename_title">Name this sheet</string>
+    <string name="rename_cancel">Cancel</string>
+    <!-- Button (verb) -->
+    <string name="rename_confirm">Rename</string>
+
+    <!-- ============================================================ -->
+    <!-- Settings -->
+
+    <string name="settings_title">Settings</string>
+    <!-- Top bar: icon descriptions read aloud by a screen reader -->
+    <string name="settings_cd_close">Close</string>
+    <string name="settings_cd_about">About</string>
+    <string name="settings_folder">Folder</string>
+    <!-- The folder setting's value when none has been chosen -->
+    <string name="settings_folder_none">None chosen</string>
+    <!-- Which way the screen is held -->
+    <string name="settings_turn">Which way round</string>
+    <!-- Landscape -->
+    <string name="settings_turn_across">Across</string>
+    <!-- Landscape, upside down -->
+    <string name="settings_turn_around">Across, turned around</string>
+    <!-- Follows the device's rotation -->
+    <string name="settings_turn_device">However the device is held</string>
+    <string name="settings_word_count">Count the words</string>
+    <string name="settings_word_count_note">Counted as runs between spaces, so it is wrong for a language that does not use them.</string>
+    <string name="settings_text_size">Text size</string>
+    <string name="settings_size_per_sheet">Each sheet its own size</string>
+    <string name="settings_size_per_sheet_note">The size set on a page stays with that sheet. Off, one size sets them all.</string>
+
+    <!-- ============================================================ -->
+    <!-- About dialog. Keep the names of the app, projects and licences as they are -->
+
+    <!-- %1$s is the version number -->
+    <string name="about_title">Typewriter %1$s</string>
+    <string name="about_body">Your writing is ordinary text files in the folder you chose. They stay there if this app is uninstalled, and any other app can open them.</string>
+    <!-- The name of the app's licence -->
+    <string name="about_licence">GNU General Public License v3</string>
+    <string name="about_icons">Icons from Material Symbols, Apache 2.0</string>
+    <!-- The donation link label, beside a drawing of a llama. A fixed phrase: a verb and an object, so the reader knows what pressing it does -->
+    <string name="about_feed_the_llamas">Feed the llamas</string>
+    <!-- Shown when no app on the phone can open the donation link; %1$s is its web address -->
+    <string name="about_no_browser">Nothing here opens web pages — %1$s</string>
+    <!-- Button that closes the About dialog -->
+    <string name="about_close">Close</string>
+
+    <!-- ============================================================ -->
+    <!-- Trouble: a dialog that stays until it is read -->
+
+    <!-- Button that closes the trouble dialog -->
+    <string name="trouble_close">Close</string>
+    <string name="trouble_not_remembered">That folder opened, but the phone would not let it be remembered. It will need choosing again next time.</string>
+    <string name="trouble_folder_unreadable">That folder could not be read. Choose it again in Settings.</string>
+    <!-- %1$s is the file name -->
+    <string name="trouble_open_failed">%1$s could not be opened.</string>
+    <string name="trouble_new_failed">A new sheet could not be started in that folder.</string>
+    <!-- %1$s is the file name -->
+    <string name="trouble_save_failed">%1$s could not be saved. What you typed is still here.</string>
+    <!-- %1$s is the file that changed elsewhere, %2$s the new file that now holds what was typed here; the reader is still on that new sheet -->
+    <string name="trouble_moved_on_here">%1$s changed somewhere else while you were writing, so nothing was written over it. What you typed is in %2$s, which is the sheet you are in.</string>
+    <!-- As above, when the reader has already left the page -->
+    <string name="trouble_moved_on_away">%1$s changed somewhere else while you were writing, so nothing was written over it. What you typed is in %2$s.</string>
+    <!-- %1$s is the file name -->
+    <string name="trouble_moved_on_no_copy">%1$s changed somewhere else, and a second copy could not be made either. Nothing has been written over. What you typed is still on this page — get it somewhere safe before leaving it.</string>
+    <!-- %1$s is the file name -->
+    <string name="trouble_rename_failed">%1$s could not be renamed.</string>
+    <!-- %1$s is the file name -->
+    <string name="trouble_delete_failed">%1$s could not be deleted.</string>
 </resources>

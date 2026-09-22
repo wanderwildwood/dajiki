@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
@@ -39,22 +40,21 @@ import com.wanderwildwood.dajiki.R
 fun AboutDialog(onDismiss: () -> Unit) {
     EInkDialog(onDismiss = onDismiss) {
         TextMMD(
-            text = "Typewriter ${BuildConfig.VERSION_NAME}",
+            text = stringResource(R.string.about_title, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
 
         Spacer(Modifier.height(14.dp))
         TextMMD(
-            text = "Your writing is ordinary text files in the folder you chose. They stay " +
-                "there if this app is uninstalled, and any other app can open them.",
+            text = stringResource(R.string.about_body),
             style = MaterialTheme.typography.labelSmall,
         )
 
         Spacer(Modifier.height(14.dp))
-        TextMMD(text = "GNU General Public License v3", style = MaterialTheme.typography.labelSmall)
+        TextMMD(text = stringResource(R.string.about_licence), style = MaterialTheme.typography.labelSmall)
         TextMMD(
-            text = "Icons from Material Symbols, Apache 2.0",
+            text = stringResource(R.string.about_icons),
             style = MaterialTheme.typography.labelSmall,
         )
 
@@ -71,7 +71,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
         OutlinedButtonMMD(
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth().height(48.dp),
-        ) { TextMMD(text = "Close", style = MaterialTheme.typography.bodySmall) }
+        ) { TextMMD(text = stringResource(R.string.about_close), style = MaterialTheme.typography.bodySmall) }
     }
 }
 
@@ -113,9 +113,9 @@ private fun Llama() {
         Spacer(Modifier.width(6.dp))
         TextMMD(
             text = if (dead) {
-                "Nothing here opens web pages — square.link/u/AGu8oT10"
+                stringResource(R.string.about_no_browser, "square.link/u/AGu8oT10")
             } else {
-                "Feed the llamas"
+                stringResource(R.string.about_feed_the_llamas)
             },
             style = MaterialTheme.typography.labelSmall,
         )

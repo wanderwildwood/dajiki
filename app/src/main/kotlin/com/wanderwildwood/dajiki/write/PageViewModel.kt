@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.wanderwildwood.dajiki.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -130,8 +131,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 trouble = if (remembered) {
                     it.trouble
                 } else {
-                    "That folder opened, but the phone would not let it be remembered. It " +
-                        "will need choosing again next time."
+                    getApplication<Application>().getString(R.string.trouble_not_remembered)
                 },
             )
         }
@@ -157,7 +157,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 // The grant can be gone: the folder may have been deleted, or its provider
                 // uninstalled, or the reader may have cleared the app's data. Say which,
                 // rather than showing an empty list that looks like an empty folder.
-                say("That folder could not be read. Choose it again in Settings.", reason)
+                say(getApplication<Application>().getString(R.string.trouble_folder_unreadable), reason)
             }
         }
     }
@@ -189,7 +189,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
                 }
-                .onFailure { say("${sheet.name} could not be opened.", it) }
+                .onFailure { say(getApplication<Application>().getString(R.string.trouble_open_failed, sheet.name), it) }
         }
     }
 
@@ -213,7 +213,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
                 }
-                .onFailure { say("A new sheet could not be started in that folder.", it) }
+                .onFailure { say(getApplication<Application>().getString(R.string.trouble_new_failed), it) }
         }
     }
 
@@ -342,7 +342,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                     Saved.MovedOn -> keepBeside(sheet, text)
                 }
             }
-            .onFailure { say("${sheet.name} could not be saved. What you typed is still here.", it) }
+            .onFailure { say(getApplication<Application>().getString(R.string.trouble_save_failed, sheet.name), it) }
     }
 
     /**
@@ -401,13 +401,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                         opened = if (stillReading) Opened(copy, text) else null,
                         sheets = listOf(copy) + it.sheets,
                         unsaved = false,
-                        trouble = buildString {
-                            append(sheet.name)
-                            append(" changed somewhere else while you were writing, so ")
-                            append("nothing was written over it. What you typed is in ")
-                            append(copy.name)
-                            append(if (stillReading) ", which is the sheet you are in." else ".")
-                        },
+                        trouble = getApplication<Application>().getString(
+                            if (stillReading) R.string.trouble_moved_on_here else R.string.trouble_moved_on_away,
+                            sheet.name,
+                            copy.name,
+                        ),
                     )
                 }
             }
@@ -418,9 +416,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 // opening any sheet clears it.
                 stalled = true
                 say(
-                    "${sheet.name} changed somewhere else, and a second copy could not be " +
-                        "made either. Nothing has been written over. What you typed is " +
-                        "still on this page — get it somewhere safe before leaving it.",
+                    getApplication<Application>().getString(R.string.trouble_moved_on_no_copy, sheet.name),
                     it,
                 )
             }
@@ -475,7 +471,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             val moved = runCatching {
                 withContext(Dispatchers.IO) { folder.rename(sheet.uri, wanted, sheet.name) }
             }.getOrElse { reason ->
-                say("${sheet.name} could not be renamed.", reason); return@launch
+                say(getApplication<Application>().getString(R.string.trouble_rename_failed, sheet.name), reason); return@launch
             } ?: return@launch
 
             seen = withContext(Dispatchers.IO) { folder.stamp(moved.uri) }
@@ -506,7 +502,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                     preferences.forgetSize(sheet.uri)
                     _state.update { it.copy(sheets = it.sheets.filterNot { row -> row.uri == sheet.uri }) }
                 }
-                .onFailure { say("${sheet.name} could not be deleted.", it) }
+                .onFailure { say(getApplication<Application>().getString(R.string.trouble_delete_failed, sheet.name), it) }
         }
     }
 

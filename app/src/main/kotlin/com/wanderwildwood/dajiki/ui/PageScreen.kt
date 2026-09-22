@@ -36,9 +36,12 @@ import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
+import com.wanderwildwood.dajiki.R
 import com.wanderwildwood.dajiki.write.Opened
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.next
@@ -261,7 +264,7 @@ private fun Foot(
                 modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.width(6.dp))
-            TextMMD(text = "Files", style = MaterialTheme.typography.labelSmall)
+            TextMMD(text = stringResource(R.string.page_files), style = MaterialTheme.typography.labelSmall)
         }
 
         // The size, where the text it sizes is on the screen to judge it by. Settings has
@@ -270,9 +273,9 @@ private fun Foot(
         // The word rather than a glyph: a row here says what it is, the same as any other.
         TextMMD(
             text = when (size) {
-                Size.SMALL -> "Small"
-                Size.MEDIUM -> "Medium"
-                Size.LARGE -> "Large"
+                Size.SMALL -> stringResource(R.string.text_size_small)
+                Size.MEDIUM -> stringResource(R.string.text_size_medium)
+                Size.LARGE -> stringResource(R.string.text_size_large)
             },
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier
@@ -292,16 +295,18 @@ private fun Foot(
                 .clickable(onClick = onRename)
                 .padding(start = 16.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
         )
+        val wordCount = words?.let { pluralStringResource(R.plurals.page_word_count, it, it) }
+        val notSaved = stringResource(R.string.page_not_saved)
         TextMMD(
             text = buildString {
-                if (words != null) {
+                if (wordCount != null) {
                     append("· ")
-                    append(if (words == 1) "1 word" else "$words words")
+                    append(wordCount)
                 }
                 // Said in words rather than shown as a dot. A dot on a panel with sixteen
                 // greys is a speck the reader has to learn the meaning of, and this is the
                 // one thing on the screen they might need to act on.
-                if (unsaved) append(" · not saved yet")
+                if (unsaved) append(" $notSaved")
             },
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(end = 16.dp, top = 10.dp, bottom = 10.dp),
