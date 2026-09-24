@@ -83,7 +83,7 @@ not merge two versions of a sheet either — it keeps both and says so.
 
 ## Where this is up to
 
-Version 0.1.3. The word count, the change-detection rules and the size a page opens at are
+Version 0.1.5. The word count, the change-detection rules and the size a page opens at are
 unit tested, every screen
 has been driven on a device, and the save path has been checked against the things that
 actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
