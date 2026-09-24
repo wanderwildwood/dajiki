@@ -74,6 +74,11 @@
     <string name="settings_text_size">Text size</string>
     <string name="settings_size_per_sheet">Each sheet its own size</string>
     <string name="settings_size_per_sheet_note">The size set on a page stays with that sheet. Off, one size sets them all.</string>
+    <!-- Opens Android's Physical keyboard settings, where a Bluetooth keyboard's layout is chosen -->
+    <string name="settings_keyboard_layout">Keyboard layout</string>
+    <string name="settings_keyboard_layout_note">Choose it in the phone\'s own keyboard settings, with the keyboard connected.</string>
+    <!-- Shown instead when this phone has no such settings page -->
+    <string name="settings_keyboard_layout_missing">This phone has no page for choosing one.</string>
 
     <!-- ============================================================ -->
     <!-- About dialog. Keep the names of the app, projects and licences as they are -->

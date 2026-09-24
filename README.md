@@ -46,6 +46,10 @@ line needed to be attached to.
 - **Ctrl-S, Ctrl-N, Ctrl-O and Escape**, and **Ctrl-Z to take back what you just typed**.
   Everything else a keyboard does — Home, End, page keys, shift to select, word-wise arrows —
   is the platform's text field doing what it already does correctly, untouched.
+- **A way to the keyboard layout.** The Kompakt reads every Bluetooth keyboard as US QWERTY,
+  so on a Nordic or German keyboard the keys marked å, ä, ö or ü type `[`, `'`, `;`. The right
+  layouts are on the phone, behind Android's own Physical keyboard page, but nothing in the
+  Kompakt's settings leads there. Settings → Keyboard layout does.
 - **Saves two seconds after you stop typing**, and again on the way out of the app. The foot
   of the page says when what you see is not yet on disk.
 - **Never writes over a sheet that changed somewhere else.** The folder is meant to be one a
@@ -98,6 +102,11 @@ Ctrl-S wrote the sheet before the pause could have, Ctrl-N started one, and Esca
 the page. That took some getting at: the emulator's keyboard uses a layout with no Ctrl key
 defined in it at all, so every combination arrived as a bare letter until the layout was
 replaced.
+
+So is the keyboard layout. On an emulator, the keys where a Swedish keyboard prints å, ö and ä
+typed `[;'`. After choosing Swedish through Settings → Keyboard layout, the same keys typed
+`åöä`, and the dead ¨ followed by e typed ë. The Kompakt has the same Physical keyboard page and
+the same layouts, but nobody has tried it there with a keyboard in hand.
 
 ## Building
 
