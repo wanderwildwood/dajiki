@@ -14,6 +14,13 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
+        <!-- The apps that act on selected text, such as Define, so the menu over a
+             selection can offer them beside Copy. Compose builds that menu itself, but it
+             cannot list what this declaration does not let it see. -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
     </queries>
 
     <application
