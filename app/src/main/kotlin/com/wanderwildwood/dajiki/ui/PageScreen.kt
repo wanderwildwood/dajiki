@@ -150,7 +150,8 @@ fun PageScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp)
                 .focusRequester(focus)
-                .onPreviewKeyEvent { event -> shortcut(event, onSaveNow, onNew, onFiles) },
+                .onPreviewKeyEvent { event -> shortcut(event, onSaveNow, onNew, onFiles) }
+                .textActions(field),
         )
 
         HorizontalDividerMMD()
