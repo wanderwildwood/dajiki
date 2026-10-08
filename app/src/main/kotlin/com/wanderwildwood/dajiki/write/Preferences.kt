@@ -31,6 +31,16 @@ enum class Turn(val activityInfo: Int) {
 enum class Size { SMALL, MEDIUM, LARGE }
 
 /**
+ * What a new sheet is called at the end: `.txt`, or `.md` for a folder that Notes or a
+ * laptop's markdown tools also read. The writing inside is the same plain text either way;
+ * this app marks nothing up, so the extension is the whole of the difference.
+ */
+enum class Format(val extension: String) {
+    PLAIN("txt"),
+    MARKDOWN("md"),
+}
+
+/**
  * What a sheet is shown at: its own size where it has one and sizes are kept per sheet,
  * and the setting otherwise.
  *
@@ -82,6 +92,12 @@ class Preferences(context: Context) {
     var sizePerSheet: Boolean
         get() = store.getBoolean(SIZE_PER_SHEET, false)
         set(value) = store.edit().putBoolean(SIZE_PER_SHEET, value).apply()
+
+    /** What a new sheet is saved as. Plain text unless the reader has asked for markdown. */
+    var format: Format
+        get() = runCatching { Format.valueOf(store.getString(FORMAT, null) ?: "") }
+            .getOrDefault(Format.PLAIN)
+        set(value) = store.edit().putString(FORMAT, value.name).apply()
 
     /**
      * The size a particular sheet has been set to, or null where it has never been set.
@@ -139,6 +155,7 @@ class Preferences(context: Context) {
         const val TURN = "turn"
         const val SIZE = "size"
         const val SIZE_PER_SHEET = "size_per_sheet"
+        const val FORMAT = "format"
         const val SIZE_OF = "size_of:"
         const val WORD_COUNT = "word_count"
         const val LAST_OPEN = "last_open"

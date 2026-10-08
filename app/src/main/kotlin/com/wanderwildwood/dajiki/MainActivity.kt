@@ -120,6 +120,7 @@ private fun Typewriter(
             onSize = viewModel::setSize,
             onSizePerSheet = viewModel::toggleSizePerSheet,
             onWordCount = viewModel::toggleWordCount,
+            onFormat = viewModel::setFormat,
         )
 
         opened != null -> PageScreen(

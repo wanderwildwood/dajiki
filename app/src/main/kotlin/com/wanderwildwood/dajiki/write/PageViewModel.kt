@@ -40,6 +40,7 @@ data class PageState(
     /** Whether [size] belongs to the open sheet or to every sheet. */
     val sizePerSheet: Boolean = false,
     val wordCount: Boolean = true,
+    val format: Format = Format.PLAIN,
     /** Something that went wrong, in words, shown until it is read and dismissed. */
     val trouble: String? = null,
 )
@@ -56,6 +57,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             size = preferences.size,
             sizePerSheet = preferences.sizePerSheet,
             wordCount = preferences.wordCount,
+            format = preferences.format,
         ),
     )
     val state: StateFlow<PageState> = _state.asStateFlow()
@@ -197,7 +199,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val where = state.value.folder ?: return
         saveNow()
         viewModelScope.launch {
-            runCatching { withContext(Dispatchers.IO) { folder.create(where) } }
+            runCatching { withContext(Dispatchers.IO) { folder.create(where, state.value.format) } }
                 .onSuccess { sheet ->
                     pending = ""
                     seen = withContext(Dispatchers.IO) { folder.stamp(sheet.uri) }
@@ -510,6 +512,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val wanted = !state.value.wordCount
         preferences.wordCount = wanted
         _state.update { it.copy(wordCount = wanted) }
+    }
+
+    fun setFormat(format: Format) {
+        preferences.format = format
+        _state.update { it.copy(format = format) }
     }
 
     fun setTurn(turn: Turn) {

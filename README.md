@@ -42,7 +42,9 @@ line needed to be attached to.
 - **Keeps your writing as ordinary text files in a folder you choose**, through the system
   picker — so it can be a folder a sync app already owns, and the files are still there if
   this app is uninstalled. No storage permission is asked for, because that grant is not a
-  permission.
+  permission. New sheets are `.txt`, or `.md` if Settings says so — the same plain text
+  under either name, for a folder that Notes or a laptop's markdown tools also read. A
+  `.md` put in the folder from elsewhere opens whichever is set.
 - **Ctrl-S, Ctrl-N, Ctrl-O and Escape**, and **Ctrl-Z to take back what you just typed**.
   Everything else a keyboard does — Home, End, page keys, shift to select, word-wise arrows —
   is the platform's text field doing what it already does correctly, untouched.

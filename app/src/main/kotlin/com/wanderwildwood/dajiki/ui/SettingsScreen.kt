@@ -31,6 +31,7 @@ import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.dajiki.R
+import com.wanderwildwood.dajiki.write.Format
 import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.next
@@ -53,6 +54,7 @@ fun SettingsScreen(
     onSize: (Size) -> Unit,
     onSizePerSheet: () -> Unit,
     onWordCount: () -> Unit,
+    onFormat: (Format) -> Unit,
 ) {
     var aboutOpen by remember { mutableStateOf(false) }
     var noLayoutPage by remember { mutableStateOf(false) }
@@ -118,6 +120,18 @@ fun SettingsScreen(
                         Size.LARGE -> stringResource(R.string.text_size_large)
                     },
                     onClick = { onSize(next(state.size)) },
+                )
+            }
+            item {
+                // Asked for from the forum: a folder that Notes also reads wants `.md`.
+                // Only the name changes; the page writes the same plain text either way.
+                Setting(
+                    title = stringResource(R.string.settings_format),
+                    value = when (state.format) {
+                        Format.PLAIN -> stringResource(R.string.settings_format_plain)
+                        Format.MARKDOWN -> stringResource(R.string.settings_format_markdown)
+                    },
+                    onClick = { onFormat(next(state.format)) },
                 )
             }
             item {

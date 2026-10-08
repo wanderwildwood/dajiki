@@ -251,26 +251,42 @@ class Folder(context: Context) {
      * writing is the wrong thing to put there — particularly on a panel where a dialog costs
      * two full repaints. The date sorts, and a sheet can be renamed from any file manager.
      *
-     * `.txt` regardless of what the reader intends to write in it: asking a provider for a
-     * name ending `.md` against a plain-text type is how files called `notes.md.txt` happen.
-     * Markdown in a `.txt` is still markdown, and a `.md` put in the folder from elsewhere
-     * opens here perfectly well.
+     * Plain text asks the provider for `text/plain` and lets it put the `.txt` on. Markdown
+     * cannot be asked for that way: a name ending `.md` against a plain-text type is how
+     * files called `notes.md.txt` happen, and Android's own storage does not count `.md` as
+     * belonging to any text type it knows. So a `.md` is asked for by its full name against
+     * no type at all, the way Notes makes its own, and the name is put back if the provider
+     * changed it anyway. Markdown in a `.txt` is still markdown, and a `.md` put in the folder
+     * from elsewhere opens here perfectly well whichever is set.
      */
-    fun create(folder: Uri): Sheet {
-        val name = SimpleDateFormat("yyyy-MM-dd HHmm", Locale.ROOT).format(Date())
+    fun create(folder: Uri, format: Format): Sheet {
+        val stamp = SimpleDateFormat("yyyy-MM-dd HHmm", Locale.ROOT).format(Date())
         val parent = DocumentsContract.buildDocumentUriUsingTree(
             folder,
             DocumentsContract.getTreeDocumentId(folder),
         )
-        val uri = DocumentsContract.createDocument(resolver, parent, "text/plain", name)
-            ?: error("The folder would not take a new sheet.")
+        var uri: Uri
+        if (format == Format.PLAIN) {
+            uri = DocumentsContract.createDocument(resolver, parent, "text/plain", stamp)
+                ?: error("The folder would not take a new sheet.")
+        } else {
+            val wanted = "$stamp.${format.extension}"
+            uri = DocumentsContract.createDocument(resolver, parent, "application/octet-stream", wanted)
+                ?: error("The folder would not take a new sheet.")
+            // "(1)" for a second sheet in the same minute is the provider's and stays; an
+            // extension it added or swapped is not.
+            val got = nameOf(uri)
+            if (got != null && !got.endsWith(".${format.extension}")) {
+                uri = runCatching { DocumentsContract.renameDocument(resolver, uri, wanted) }.getOrNull() ?: uri
+            }
+        }
         // What it ended up called, asked rather than assumed. The provider adds the
         // extension, and where a sheet of that name is already there it picks another --
         // "2026-09-17 1432 (1).txt" -- and the row would otherwise name a file that is not
         // the one just made.
         return Sheet(
             uri = uri,
-            name = nameOf(uri) ?: "$name.txt",
+            name = nameOf(uri) ?: "$stamp.${format.extension}",
             modified = System.currentTimeMillis(),
         )
     }

@@ -72,6 +72,10 @@
     <string name="settings_word_count">Count the words</string>
     <string name="settings_word_count_note">Counted as runs between spaces, so it is wrong for a language that does not use them.</string>
     <string name="settings_text_size">Text size</string>
+    <!-- What a new sheet is saved as; the two values name the file extension -->
+    <string name="settings_format">New sheets saved as</string>
+    <string name="settings_format_plain">Plain text (.txt)</string>
+    <string name="settings_format_markdown">Markdown (.md)</string>
     <string name="settings_size_per_sheet">Each sheet its own size</string>
     <string name="settings_size_per_sheet_note">The size set on a page stays with that sheet. Off, one size sets them all.</string>
     <!-- Opens Android's Physical keyboard settings, where a Bluetooth keyboard's layout is chosen -->
