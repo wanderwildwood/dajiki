@@ -74,12 +74,13 @@ fun SettingsScreen(
         // while nothing grows. A reader who has turned the system font size up wraps the note
         // under "Count the words" onto a second line, and that one line was enough to push
         // "Text size" off the bottom edge, where it could be neither seen nor pressed. A
-        // list carries whatever the rows come to, and brings the chevron rail that says so.
+        // list carries whatever the rows come to, a page to a swipe.
         LazyColumnMMD(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
             contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            isScrollbarVisible = false,
         ) {
             item {
                 Setting(
