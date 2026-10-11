@@ -124,4 +124,5 @@ release build comes out unsigned rather than wrongly signed.
 
 GNU General Public License v3.0 only. Copyright wander wildwood.
 
-Icons are from Material Symbols, Apache 2.0.
+The launcher icon's typewriter was drawn by claytonevandavis on the Mudita forum, and is used
+with their permission. The other icons are from Material Symbols, Apache 2.0.
