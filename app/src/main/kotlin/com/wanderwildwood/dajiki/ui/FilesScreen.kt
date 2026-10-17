@@ -1,5 +1,6 @@
 package com.wanderwildwood.dajiki.ui
 
+import androidx.compose.foundation.lazy.rememberLazyListState
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -114,51 +115,55 @@ private fun Sheets(
     onNew: () -> Unit,
     onDelete: (Sheet) -> Unit,
 ) {
-    LazyColumnMMD(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp),
-        isScrollbarVisible = false,
-    ) {
-        item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onNew)
-                    .padding(vertical = 14.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Add,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(10.dp))
-                TextMMD(text = stringResource(R.string.files_new_sheet), style = MaterialTheme.typography.bodyMedium)
-            }
-            HorizontalDividerMMD()
-        }
-
-        if (sheets.isEmpty()) {
+    // Newest first rather than by name, so page dots rather than letters.
+    val state = rememberLazyListState()
+    ListJumpBox(state, ListJump.Pages, Modifier.background(MaterialTheme.colorScheme.surface)) {
+        LazyColumnMMD(
+            Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            state = state,
+            isScrollbarVisible = false,
+        ) {
             item {
-                // Three states, not two. A cold start can take the better part of ten
-                // seconds to get the folder back, and "nothing here" during those seconds
-                // tells a writer their work is gone. A word rather than a spinner: nothing
-                // on this panel animates.
-                TextMMD(
-                    text = when (reading) {
-                        Reading.NOT_YET -> stringResource(R.string.files_reading)
-                        Reading.DONE -> stringResource(R.string.files_empty)
-                        Reading.FAILED -> stringResource(R.string.files_read_failed)
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(vertical = 14.dp),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNew)
+                        .padding(vertical = 14.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    TextMMD(text = stringResource(R.string.files_new_sheet), style = MaterialTheme.typography.bodyMedium)
+                }
+                HorizontalDividerMMD()
             }
-        }
 
-        items(sheets, key = { it.uri.toString() }) { sheet ->
-            SheetRow(sheet, onOpen = { onOpen(sheet) }, onDelete = { onDelete(sheet) })
+            if (sheets.isEmpty()) {
+                item {
+                    // Three states, not two. A cold start can take the better part of ten
+                    // seconds to get the folder back, and "nothing here" during those seconds
+                    // tells a writer their work is gone. A word rather than a spinner: nothing
+                    // on this panel animates.
+                    TextMMD(
+                        text = when (reading) {
+                            Reading.NOT_YET -> stringResource(R.string.files_reading)
+                            Reading.DONE -> stringResource(R.string.files_empty)
+                            Reading.FAILED -> stringResource(R.string.files_read_failed)
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(vertical = 14.dp),
+                    )
+                }
+            }
+
+            items(sheets, key = { it.uri.toString() }) { sheet ->
+                SheetRow(sheet, onOpen = { onOpen(sheet) }, onDelete = { onDelete(sheet) })
+            }
         }
     }
 }
