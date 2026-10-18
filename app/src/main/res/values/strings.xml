@@ -122,4 +122,7 @@
     <string name="trouble_rename_failed">%1$s could not be renamed.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_delete_failed">%1$s could not be deleted.</string>
+    <string name="list_jump_setting">Letters and page dots</string>
+    <string name="list_jump_shown">Shown</string>
+    <string name="list_jump_hidden">Hidden</string>
 </resources>

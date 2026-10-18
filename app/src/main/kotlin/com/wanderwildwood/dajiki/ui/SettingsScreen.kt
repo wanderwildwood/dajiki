@@ -122,6 +122,14 @@ fun SettingsScreen(
                 )
             }
             item {
+                val jumpShown by rememberListJumpShown()
+                Setting(
+                    title = stringResource(R.string.list_jump_setting),
+                    value = stringResource(if (jumpShown) R.string.list_jump_shown else R.string.list_jump_hidden),
+                    onClick = { ListJumpPrefs.setShown(context, !jumpShown) },
+                )
+            }
+            item {
                 // Asked for from the forum: a folder that Notes also reads wants `.md`.
                 // Only the name changes; the page writes the same plain text either way.
                 Setting(
