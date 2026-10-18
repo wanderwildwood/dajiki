@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
@@ -75,12 +74,11 @@ fun SettingsScreen(
         // under "Count the words" onto a second line, and that one line was enough to push
         // "Text size" off the bottom edge, where it could be neither seen nor pressed. A
         // list carries whatever the rows come to, a page to a swipe.
-        LazyColumnMMD(
+        PagedColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-            isScrollbarVisible = false,
+            contentPadding = PaddingValues(top = 12.dp),
         ) {
             item {
                 Setting(

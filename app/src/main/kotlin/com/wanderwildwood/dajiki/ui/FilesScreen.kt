@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.dajiki.R
@@ -118,10 +117,9 @@ private fun Sheets(
     // Newest first rather than by name, so page dots rather than letters.
     val state = rememberLazyListState()
     ListJumpBox(state, ListJump.Pages, Modifier.background(MaterialTheme.colorScheme.surface)) {
-        LazyColumnMMD(
+        PagedColumn(
             Modifier.fillMaxSize().padding(horizontal = 16.dp),
             state = state,
-            isScrollbarVisible = false,
         ) {
             item {
                 Row(
