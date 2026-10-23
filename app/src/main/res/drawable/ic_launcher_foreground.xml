@@ -19,7 +19,7 @@
      Weight is a 0.8 unit stroke in the fill's own colour, which grows every line outward and
      leaves the drawing exactly where the hand put it. It measures 0.61 mean ink at 48px,
      against the Music Box at 0.60 and Mudita's chess icon at 0.71. Finer than this measures
-     0.58 and goes grey on the panel, which is the fault a stranger noticed in Clippings.
+     0.58 and goes grey on the panel, which is the fault a stranger noticed in Feeds.
 
      The drawing's own enclosing circle is 32.5 of the 33 units the launcher mask is certain
      to keep, so it fills the frame without any of it being cut. -->
