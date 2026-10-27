@@ -90,6 +90,11 @@
     <!-- %1$s is the version number -->
     <string name="about_title">Typewriter %1$s</string>
     <string name="about_body">Your writing is ordinary text files in the folder you chose. They stay there if this app is uninstalled, and any other app can open them.</string>
+    <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy">Everything you write stays on this phone. The app has no internet access, so nothing is sent anywhere, and nothing is collected about you.</string>
+    <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. Backups and exports go only where you choose to save them.</string>
+    <string name="about_terms_title">Terms</string>
+    <string name="about_terms">This app is free software under the GNU General Public License v3. It comes with no warranty: use it at your own risk.</string>
     <!-- The name of the app's licence -->
     <string name="about_licence">GNU General Public License v3</string>
     <string name="about_icons">Icons from Material Symbols, Apache 2.0</string>
@@ -116,13 +121,13 @@
     <string name="trouble_moved_on_here">%1$s changed somewhere else while you were writing, so nothing was written over it. What you typed is in %2$s, which is the sheet you are in.</string>
     <!-- As above, when the reader has already left the page -->
     <string name="trouble_moved_on_away">%1$s changed somewhere else while you were writing, so nothing was written over it. What you typed is in %2$s.</string>
+    <!-- %1$s is the file that is no longer in the folder, %2$s the new file holding what was typed; the reader is still on that new sheet -->
+    <string name="trouble_gone_here">%1$s is no longer in the folder, so nothing could be written to it. What you typed is in %2$s, which is the sheet you are in.</string>
+    <string name="trouble_gone_away">%1$s is no longer in the folder, so nothing could be written to it. What you typed is in %2$s.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_moved_on_no_copy">%1$s changed somewhere else, and a second copy could not be made either. Nothing has been written over. What you typed is still on this page — get it somewhere safe before leaving it.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_rename_failed">%1$s could not be renamed.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_delete_failed">%1$s could not be deleted.</string>
-    <string name="list_jump_setting">Letters and page dots</string>
-    <string name="list_jump_shown">Shown</string>
-    <string name="list_jump_hidden">Hidden</string>
 </resources>

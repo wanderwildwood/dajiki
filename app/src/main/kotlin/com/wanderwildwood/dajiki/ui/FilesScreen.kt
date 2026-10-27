@@ -114,12 +114,9 @@ private fun Sheets(
     onNew: () -> Unit,
     onDelete: (Sheet) -> Unit,
 ) {
-    // Newest first rather than by name, so page dots rather than letters.
-    val state = rememberLazyListState()
-    ListJumpBox(state, ListJump.Pages, Modifier.background(MaterialTheme.colorScheme.surface)) {
+    run {
         PagedColumn(
             Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            state = state,
         ) {
             item {
                 Row(
@@ -170,7 +167,7 @@ private fun Sheets(
  * One sheet, and the only way to be rid of it.
  *
  * The row asks rather than a dialog: one repaint instead of two, and the question is put in
- * the place the answer belongs. It disarms itself after four seconds, so a stray tap leaves
+ * the place the answer belongs. It disarms itself after six seconds, so a stray tap leaves
  * nothing live for whoever picks the phone up next, and tapping the row while it is armed
  * puts it away rather than opening the sheet.
  */
@@ -179,7 +176,7 @@ private fun SheetRow(sheet: Sheet, onOpen: () -> Unit, onDelete: () -> Unit) {
     var armed by remember(sheet.uri) { mutableStateOf(false) }
     LaunchedEffect(armed) {
         if (armed) {
-            delay(4000)
+            delay(6000)
             armed = false
         }
     }
@@ -205,14 +202,20 @@ private fun SheetRow(sheet: Sheet, onOpen: () -> Unit, onDelete: () -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
             )
         }
-        Icon(
-            imageVector = Icons.Delete,
-            contentDescription = if (armed) stringResource(R.string.files_delete_armed) else stringResource(R.string.files_cd_delete),
-            tint = MaterialTheme.colorScheme.onSurface,
+        // 48 dp to press, the 24 dp drawing in the middle of it.
+        Box(
             modifier = Modifier
-                .size(24.dp)
+                .size(48.dp)
                 .clickable { if (armed) onDelete() else armed = true },
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Delete,
+                contentDescription = if (armed) stringResource(R.string.files_delete_armed) else stringResource(R.string.files_cd_delete),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(24.dp),
+            )
+        }
     }
 }
 

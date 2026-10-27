@@ -92,6 +92,28 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     private var stalled = false
 
     /**
+     * The sheet this app made a moment ago and nothing has been typed into yet. Leaving it
+     * empty would leave a 0-byte file in the reader's folder, so it is taken away again.
+     */
+    private var fresh: Uri? = null
+
+    /** The fresh sheet if it is still untouched and being left, else null. */
+    private fun untouched(sheet: Sheet?, text: String): Sheet? =
+        sheet?.takeIf { it.uri == fresh && text.isEmpty() && written == "" }
+
+    private suspend fun discard(sheet: Sheet) {
+        runCatching { withContext(Dispatchers.IO) { folder.delete(sheet.uri) } }.onSuccess {
+            if (fresh == sheet.uri) fresh = null
+            if (preferences.lastOpen == sheet.uri) preferences.lastOpen = null
+            preferences.forgetSize(sheet.uri)
+            _state.update { it.copy(sheets = it.sheets.filterNot { row -> row.uri == sheet.uri }) }
+        }
+    }
+
+    /** True while the sheet is being closed, so a spare copy does not pull the page onto itself. */
+    private var leaving = false
+
+    /**
      * The pause between the last keystroke and the write. Cancelled freely — that is what
      * makes it a pause — and it holds nothing but the waiting.
      */
@@ -166,6 +188,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
     fun open(sheet: Sheet) {
         saveNow()
+        val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -178,10 +201,13 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
                 .onSuccess { (stamp, text) ->
+                    if (abandoned != null && abandoned.uri != sheet.uri) discard(abandoned)
+                    fresh = null
                     pending = text
                     seen = stamp
                     written = text
                     stalled = false
+                    leaving = false
                     preferences.lastOpen = sheet.uri
                     _state.update {
                         it.copy(
@@ -198,9 +224,12 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     fun newSheet() {
         val where = state.value.folder ?: return
         saveNow()
+        val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
             runCatching { withContext(Dispatchers.IO) { folder.create(where, state.value.format) } }
                 .onSuccess { sheet ->
+                    if (abandoned != null) discard(abandoned)
+                    fresh = sheet.uri
                     pending = ""
                     seen = withContext(Dispatchers.IO) { folder.stamp(sheet.uri) }
                     written = ""
@@ -227,6 +256,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * had already set to null — so closing a page with unsaved words in it wrote nothing at
      * all, silently, which is the worst thing this app could do.
      *
+     * The page is only put away once the save has landed. If it could not be written, anywhere,
+     * the page stays and says why: the words are never dropped with the screen.
+     *
      * The folder is listed again afterwards rather than alongside, so the row for the sheet
      * just closed shows when it was actually written rather than when it was last opened.
      */
@@ -237,11 +269,17 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
         pause?.cancel()
         pause = null
-        preferences.lastOpen = null
-        _state.update { it.copy(opened = null) }
+        leaving = true
 
         viewModelScope.launch {
             if (dirty && sheet != null) save(sheet, text)
+            leaving = false
+            // The page stays on screen until what is on it is safe. A save that failed leaves
+            // the unsaved mark up and the words in the field, and the reason on a dialog.
+            if (state.value.unsaved && sheet != null) return@launch
+            preferences.lastOpen = null
+            _state.update { it.copy(opened = null) }
+            untouched(sheet, text)?.let { discard(it) }
             state.value.folder?.let { listNow(it) }
         }
     }
@@ -296,6 +334,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private sealed interface Saved {
+        /** Not written: the sheet is no longer in the folder at all. */
+        data object Gone : Saved
+
         /** Written, and this is what the sheet looks like now. */
         data class Ok(val stamp: Stamp?) : Saved
 
@@ -322,7 +363,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
         runCatching {
             withContext(Dispatchers.IO) {
-                if (movedOn(sheet.uri, before, onDisk)) {
+                if (before != null && vanished(before, folder.stamp(sheet.uri))) {
+                    Saved.Gone
+                } else if (movedOn(sheet.uri, before, onDisk)) {
                     Saved.MovedOn
                 } else {
                     folder.write(sheet.uri, text)
@@ -342,6 +385,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     Saved.MovedOn -> keepBeside(sheet, text)
+                    Saved.Gone -> keepBeside(sheet, text, gone = true)
                 }
             }
             .onFailure { say(getApplication<Application>().getString(R.string.trouble_save_failed, sheet.name), it) }
@@ -359,7 +403,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     private fun movedOn(uri: Uri, before: Stamp?, onDisk: String?): Boolean {
         // Nothing to compare against: this app has not yet seen the sheet from the outside.
         if (before == null) return false
-        val now = folder.stamp(uri) ?: return false
+        val now = folder.stamp(uri)
+        // Gone from the folder altogether (deleted or moved from outside while it was open):
+        // writing to its address would fail, so the words have to go beside it.
+        if (vanished(before, now)) return true
+        if (now == null) return false
         changedBetween(before, now)?.let { return it }
         if (onDisk == null) return false
         return runCatching { folder.read(uri) }.getOrNull() != onDisk
@@ -374,7 +422,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * screen. The page then follows the new sheet, or the very next keystroke would conflict
      * against the same file again and leave a trail of copies.
      */
-    private suspend fun keepBeside(sheet: Sheet, text: String) {
+    private suspend fun keepBeside(sheet: Sheet, text: String, gone: Boolean = false) {
         val where = state.value.folder ?: return
 
         runCatching {
@@ -394,7 +442,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 // for the folder. Following the copy is right when they are still on the
                 // page and wrong when they are not: pressing Files and being dropped back
                 // into a sheet they did not open would be its own small betrayal.
-                val stillReading = state.value.opened != null
+                val stillReading = state.value.opened != null && !leaving
                 if (stillReading) preferences.lastOpen = copy.uri
                 preferences.copySize(sheet.uri, copy.uri)
 
@@ -404,7 +452,12 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                         sheets = listOf(copy) + it.sheets,
                         unsaved = false,
                         trouble = getApplication<Application>().getString(
-                            if (stillReading) R.string.trouble_moved_on_here else R.string.trouble_moved_on_away,
+                            when {
+                                gone && stillReading -> R.string.trouble_gone_here
+                                gone -> R.string.trouble_gone_away
+                                stillReading -> R.string.trouble_moved_on_here
+                                else -> R.string.trouble_moved_on_away
+                            },
                             sheet.name,
                             copy.name,
                         ),
@@ -432,6 +485,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * and leaves it to the save, which will keep both copies rather than pick one.
      */
     fun resumed() {
+        // No sheet open: the folder list may be stale after a sync or another app's work.
+        if (state.value.opened == null) {
+            state.value.folder?.let { list(it) }
+            return
+        }
         val sheet = state.value.opened?.sheet ?: return
         if (state.value.unsaved) return
         val before = seen ?: return
@@ -479,6 +537,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             seen = withContext(Dispatchers.IO) { folder.stamp(moved.uri) }
             written = text
             preferences.lastOpen = moved.uri
+            if (fresh == sheet.uri) fresh = moved.uri
             preferences.moveSize(sheet.uri, moved.uri)
             _state.update {
                 it.copy(

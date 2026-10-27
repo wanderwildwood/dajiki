@@ -39,6 +39,12 @@ fun changedBetween(before: Stamp, now: Stamp): Boolean? = when {
 }
 
 /**
+ * Whether a sheet that was there ([before]) is no longer there ([now] is null). A sheet this
+ * app never saw from outside has nothing to have vanished from.
+ */
+fun vanished(before: Stamp?, now: Stamp?): Boolean = before != null && now == null
+
+/**
  * What to call the copy holding what was typed here, when the sheet itself has moved on.
  *
  * The extension is kept where there is one, so a `.md` that came from a laptop forks to a
@@ -123,7 +129,15 @@ class Folder(context: Context) {
      * what lets a sheet that moved on underneath us be told apart from one this app last
      * wrote itself.
      */
-    fun stamp(uri: Uri): Stamp? =
+    fun stamp(uri: Uri): Stamp? = try {
+        stampOf(uri)
+    } catch (_: Exception) {
+        // A provider that answers for a missing document by throwing rather than by an empty
+        // cursor (the storage provider does). Same answer: it is not there.
+        null
+    }
+
+    private fun stampOf(uri: Uri): Stamp? =
         resolver.query(
             uri,
             arrayOf(

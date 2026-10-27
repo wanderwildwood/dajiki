@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,8 +56,9 @@ fun SettingsScreen(
     onWordCount: () -> Unit,
     onFormat: (Format) -> Unit,
 ) {
-    var aboutOpen by remember { mutableStateOf(false) }
-    var noLayoutPage by remember { mutableStateOf(false) }
+    // Saveable: turning the phone round to see how it looks must not leave Settings.
+    var aboutOpen by rememberSaveable { mutableStateOf(false) }
+    var noLayoutPage by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
@@ -119,14 +121,6 @@ fun SettingsScreen(
                         Size.LARGE -> stringResource(R.string.text_size_large)
                     },
                     onClick = { onSize(next(state.size)) },
-                )
-            }
-            item {
-                val jumpShown by rememberListJumpShown()
-                Setting(
-                    title = stringResource(R.string.list_jump_setting),
-                    value = stringResource(if (jumpShown) R.string.list_jump_shown else R.string.list_jump_hidden),
-                    onClick = { ListJumpPrefs.setShown(context, !jumpShown) },
                 )
             }
             item {

@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
@@ -255,8 +257,9 @@ private fun Foot(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
+                .heightIn(min = 48.dp)
                 .clickable(onClick = onFiles)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp),
         ) {
             Icon(
                 imageVector = Icons.Back,
@@ -280,8 +283,10 @@ private fun Foot(
             },
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier
+                .heightIn(min = 48.dp)
                 .clickable(onClick = onSize)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp)
+                .wrapContentHeight(Alignment.CenterVertically),
         )
 
         Spacer(Modifier.weight(1f))
@@ -293,8 +298,10 @@ private fun Foot(
             text = name,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier
+                .heightIn(min = 48.dp)
                 .clickable(onClick = onRename)
-                .padding(start = 16.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
+                .padding(start = 16.dp, end = 4.dp)
+                .wrapContentHeight(Alignment.CenterVertically),
         )
         val wordCount = words?.let { pluralStringResource(R.plurals.page_word_count, it, it) }
         val notSaved = stringResource(R.string.page_not_saved)
