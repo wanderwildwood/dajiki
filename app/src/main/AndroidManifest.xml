@@ -12,6 +12,7 @@
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
         </intent>
         <!-- The apps that act on selected text, such as Define, so the menu over a

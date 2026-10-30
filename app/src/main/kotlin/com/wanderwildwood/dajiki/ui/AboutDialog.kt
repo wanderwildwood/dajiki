@@ -1,7 +1,10 @@
 package com.wanderwildwood.dajiki.ui
 
-import android.content.Intent
-import android.net.Uri
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.Surface
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -42,18 +45,19 @@ import com.wanderwildwood.dajiki.R
  */
 @Composable
 fun AboutDialog(onDismiss: () -> Unit) {
-    EInkDialog(onDismiss = onDismiss) {
+    // A full screen, not a small panel: held across, a panel leaves room for a few lines and
+    // Privacy and Terms would take pages. The body pages on whole rows; Close stays outside it.
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+      Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+       Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp, vertical = 8.dp)) {
         TextMMD(
             text = stringResource(R.string.about_title, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
 
-        Spacer(Modifier.height(10.dp))
-        // The body pages on whole rows when the panel is held across and cannot show it all;
-        // the Close button stays outside it, always in reach.
-        val room = (LocalConfiguration.current.screenHeightDp - 165).coerceIn(120, 380).dp
-        PagedColumn(Modifier.fillMaxWidth().height(room)) {
+        Spacer(Modifier.height(6.dp))
+        PagedColumn(Modifier.weight(1f).fillMaxWidth()) {
             item {
                 TextMMD(
                     text = stringResource(R.string.about_body),
@@ -87,17 +91,20 @@ fun AboutDialog(onDismiss: () -> Unit) {
                     TextMMD(text = stringResource(R.string.about_icons), style = MaterialTheme.typography.labelSmall)
                 }
             }
+            item { LicencesLink() }
             item {
                 Spacer(Modifier.height(10.dp))
                 Llama()
             }
         }
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(8.dp))
         OutlinedButtonMMD(
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) { TextMMD(text = stringResource(R.string.about_close), style = MaterialTheme.typography.bodySmall) }
+       }
+      }
     }
 }
 
@@ -130,12 +137,7 @@ private fun Llama() {
             // The site's address opens the site, the way the llama beside it opens its page.
             modifier = Modifier
                 .clickable {
-                    val opened = runCatching {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("https://wanderthe.dev")),
-                        )
-                    }.isSuccess
-                    dead = if (opened) null else "wanderthe.dev"
+                    openLink(context, "https://wanderthe.dev", context.getString(R.string.about_no_browser_address, "wanderthe.dev"))
                 }
                 .heightIn(min = 48.dp)
                 .padding(end = 4.dp)
@@ -146,12 +148,7 @@ private fun Llama() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clickable {
-                    val opened = runCatching {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("https://square.link/u/AGu8oT10")),
-                        )
-                    }.isSuccess
-                    dead = if (opened) null else "square.link/u/AGu8oT10"
+                    openLink(context, "https://square.link/u/AGu8oT10", context.getString(R.string.about_no_browser_address, "square.link/u/AGu8oT10"))
                 }
                 .heightIn(min = 48.dp),
         ) {
