@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.structuralEqualityPolicy
@@ -45,7 +46,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -61,6 +64,8 @@ import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.text_field.TextFieldMMD
 import com.wanderwildwood.dajiki.R
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
 
 // The same file in every app of this shop, apart from its package lines.
 
@@ -98,7 +103,10 @@ import kotlinx.coroutines.launch
  * no rule and no box, in a strip under the rows that is reserved only while the list runs to more
  * than one page, so a list that fits loses nothing. A tap on it asks for a page to go to. N is
  * worked out from the rows' heights as they have been measured, the rows not yet seen counting
- * as the median of those that have, so it can shift by a page as a long list is read.
+ * as the median of those that have, so it can shift by a page as a long list is read. A short
+ * list (up to [PROBE_MAX_ROWS] rows) is measured whole once, before the first number is shown
+ * for it: the list is laid out for a moment several screens tall, clipped to its own, so every
+ * row's height is known and N does not change as the pages are turned.
  */
 @Composable
 fun PagedColumn(
@@ -135,7 +143,16 @@ fun PagedColumn(
         // between, for ever, on the main thread.
         derivedStateOf { state.overflows(if (room > 0) room else state.layoutInfo.viewportSize.height + (if (reserved) strip else 0)) }
     }
-    val spread by remember(state) { derivedStateOf(structuralEqualityPolicy()) { state.spread() } }
+    // How many rows there are, counted without composing any: a short list is measured whole.
+    val rowTotal = Snapshot.withoutReadObservation { countRows(content) }
+    val probeKey = if (shouldProbe(rowTotal)) rowTotal else 0
+    var viewport by remember(state) { mutableStateOf(0) }
+    var width by remember(state) { mutableStateOf(0) }
+    val fontScale = LocalDensity.current.fontScale
+    // Measured again when the width or the text size changes, since either moves every row's height.
+    var probing by remember(state, probeKey, width, fontScale) { mutableStateOf(probeKey > 0) }
+    val maxGap = with(LocalDensity.current) { SPREAD_GAP.roundToPx() }
+    val spread by remember(state) { derivedStateOf(structuralEqualityPolicy()) { state.spread(maxGap, viewport) } }
     val heights = remember(state) { RowHeights() }
     var at by remember(state) { mutableStateOf(FolioAt(1, 1)) }
     var asking by remember(state) { mutableStateOf(false) }
@@ -156,12 +173,24 @@ fun PagedColumn(
         snapshotFlow { folio && pages }.collect { reserved = it }
     }
     LaunchedEffect(state) {
-        snapshotFlow { state.measuredPages(heights) }.collect { at = it }
+        snapshotFlow { state.measuredPages(heights, viewport) }.collect { at = it }
+    }
+    LaunchedEffect(state, probeKey, width, fontScale) {
+        if (!probing) return@LaunchedEffect
+        // The list is laid out several screens tall for as long as it takes to say so; read every
+        // row it then holds, and go back to the screen's height.
+        withTimeoutOrNull(PROBE_TIMEOUT_MS) {
+            snapshotFlow { viewport > 0 && state.layoutInfo.viewportSize.height > viewport }.first { it }
+        }
+        if (viewport > 0) state.measuredPages(heights, viewport)
+        probing = false
     }
 
     Box(modifier.padding(top = contentPadding.calculateTopPadding(), bottom = contentPadding.calculateBottomPadding())) {
         Column(Modifier.fillMaxSize().onSizeChanged { room = it.height }) {
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
+                viewport = constraints.maxHeight
+                width = constraints.maxWidth
                 // Room after the last row for it to come to the top, so the list never has to line
                 // its end up with the bottom of the screen.
                 val tail = maxHeight
@@ -173,6 +202,7 @@ fun PagedColumn(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
+                        .probeTall(probing)
                         .pointerInput(state) {
                             var turned = false
                             detectVerticalDragGestures(
@@ -224,7 +254,9 @@ fun PagedColumn(
                 contentAlignment = Alignment.BottomEnd,
             ) {
                 TextMMD(
-                    text = stringResource(R.string.folio_of, at.page, at.total),
+                    // Rows not yet measured make the total a guess: it is marked with a tilde, and
+                    // the number is not shown at all while the first measuring is under way.
+                    text = if (probing) "" else stringResource(if (at.exact) R.string.folio_of else R.string.folio_of_approx, at.page, at.total),
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
                     modifier = Modifier.padding(bottom = 3.dp),
                 )
@@ -237,7 +269,7 @@ fun PagedColumn(
             page = at.page,
             total = at.total,
             onGo = { wanted ->
-                scope.launch { state.goToPage(clampPage(wanted, at.total), heights) }
+                scope.launch { state.goToPage(clampPage(wanted, at.total), heights, viewport) }
             },
             onDismiss = { asking = false },
         )
@@ -246,6 +278,43 @@ fun PagedColumn(
 
 private val FOLIO_STRIP = 26.dp
 private val FOLIO_MARGIN = 14.dp
+
+/** The most a gap between two rows is stretched to share out the room a page leaves under them. */
+private val SPREAD_GAP = 24.dp
+
+/**
+ * Lays the list out [PROBE_SCREENS] screens tall while [probing], reporting the screen's height
+ * to its parent, which clips what hangs below: the rows past the foot are composed and measured
+ * for the page count, and the picture on screen is the one the reader would see anyway.
+ */
+private fun Modifier.probeTall(probing: Boolean): Modifier =
+    if (!probing) this else layout { measurable, constraints ->
+        val h = constraints.maxHeight
+        if (h == androidx.compose.ui.unit.Constraints.Infinity) {
+            val p = measurable.measure(constraints)
+            layout(p.width, p.height) { p.place(0, 0) }
+        } else {
+            val p = measurable.measure(constraints.copy(minHeight = probeHeight(h), maxHeight = probeHeight(h)))
+            layout(p.width, h) { p.place(0, 0) }
+        }
+    }
+
+/** The rows of whatever [content] adds, counted without composing any. */
+private fun countRows(content: LazyListScope.() -> Unit): Int {
+    var n = 0
+    object : LazyListScope {
+        override fun item(key: Any?, contentType: Any?, content: @Composable LazyItemScope.() -> Unit) { n++ }
+        override fun items(
+            count: Int,
+            key: ((index: Int) -> Any)?,
+            contentType: (index: Int) -> Any?,
+            itemContent: @Composable LazyItemScope.(index: Int) -> Unit,
+        ) { n += count }
+        @ExperimentalFoundationApi
+        override fun stickyHeader(key: Any?, contentType: Any?, content: @Composable LazyItemScope.(Int) -> Unit) { n++ }
+    }.content()
+    return n
+}
 
 @Composable
 private fun FolioDialog(page: Int, total: Int, onGo: (Int) -> Unit, onDismiss: () -> Unit) {
@@ -298,8 +367,8 @@ private fun FolioDialog(page: Int, total: Int, onGo: (Int) -> Unit, onDismiss: (
 /** Where a page begins: [row], and [into] pixels down it when a tall row runs over several pages. */
 internal data class PageStart(val row: Int, val into: Int)
 
-/** The page showing, from 1, and how many there are. */
-internal data class FolioAt(val page: Int, val total: Int)
+/** The page showing, from 1, and how many there are; [exact] is false while some rows' heights are still guessed. */
+internal data class FolioAt(val page: Int, val total: Int, val exact: Boolean = true)
 
 /**
  * Where each page begins when rows of the given [heights] (their pitch, gaps included) are
@@ -339,6 +408,29 @@ internal fun pageOf(starts: List<PageStart>, row: Int, into: Int): Int {
     return found
 }
 
+/** Lists up to this many rows are measured whole, once; longer ones count the rows they have not seen as the median of those they have. */
+internal const val PROBE_MAX_ROWS = 600
+
+/** How tall, in pixels, a list is laid out while its rows are measured: tall enough for six hundred ordinary rows, short of the limit of a layout constraint. */
+internal const val PROBE_PX = 250_000
+
+/** The longest the measuring layout is waited for, in milliseconds. */
+internal const val PROBE_TIMEOUT_MS = 1000L
+
+/** Whether a list of [rows] rows is measured whole: one row has no pages to count, a long list is not worth composing. */
+internal fun shouldProbe(rows: Int): Boolean = rows in 2..PROBE_MAX_ROWS
+
+/** The height a screen of [screen] pixels is laid out at while its rows are measured. */
+internal fun probeHeight(screen: Int): Int = if (screen <= 0) 0 else maxOf(screen, PROBE_PX)
+
+/**
+ * How much of the [room] left under a page's rows is shared out between their [gaps] gaps: all of
+ * it, unless that would stretch a gap past [maxGap] -- two rows on a page do not need a hand's
+ * width between them, only to sit where a full page would put its first two.
+ */
+internal fun spreadShare(room: Int, gaps: Int, maxGap: Int): Int =
+    if (gaps <= 0 || room <= 0) 0 else minOf(room.toLong(), gaps.toLong() * maxGap).toInt()
+
 /** A page typed in, kept to the pages there are. */
 internal fun clampPage(wanted: Int, total: Int): Int = wanted.coerceIn(1, maxOf(total, 1))
 
@@ -350,22 +442,25 @@ internal class RowHeights {
         val guess = if (seen.isEmpty()) 0 else seen.values.sorted().let { it[it.size / 2] }
         return List(count) { seen[it] ?: guess }
     }
+    /** How many of the first [count] rows have been seen. */
+    fun known(count: Int): Int = (0 until count).count { it in seen }
     fun clear() = seen.clear()
 }
 
-private fun LazyListState.measuredPages(heights: RowHeights): FolioAt {
+private fun LazyListState.measuredPages(heights: RowHeights, screen: Int): FolioAt {
     val rows = rows()
-    if (rows.isEmpty()) return FolioAt(1, 1)
+    if (rows.isEmpty()) return FolioAt(1, 1, false)
     val spacing = layoutInfo.mainAxisItemSpacing
     rows.forEachIndexed { i, r ->
         heights.put(r.index, (rows.getOrNull(i + 1)?.takeIf { it.index == r.index + 1 }?.let { it.offset - r.offset } ?: (r.size + spacing)))
     }
-    val starts = pageStarts(heights.list(rowCount()), layoutInfo.viewportSize.height)
-    return FolioAt(pageOf(starts, firstVisibleItemIndex, firstVisibleItemScrollOffset), starts.size)
+    // The page is the screen's, not the list's: while the rows are measured the list is taller.
+    val starts = pageStarts(heights.list(rowCount()), if (screen > 0) screen else layoutInfo.viewportSize.height)
+    return FolioAt(pageOf(starts, firstVisibleItemIndex, firstVisibleItemScrollOffset), starts.size, heights.known(rowCount()) >= rowCount())
 }
 
-private suspend fun LazyListState.goToPage(page: Int, heights: RowHeights) {
-    val starts = pageStarts(heights.list(rowCount()), layoutInfo.viewportSize.height)
+private suspend fun LazyListState.goToPage(page: Int, heights: RowHeights, screen: Int) {
+    val starts = pageStarts(heights.list(rowCount()), if (screen > 0) screen else layoutInfo.viewportSize.height)
     val s = starts[(page - 1).coerceIn(0, starts.size - 1)]
     scrollToItem(s.row, s.into)
 }
@@ -427,8 +522,10 @@ private data class Spread(val from: Int, val to: Int, val room: Int, val cut: In
 }
 
 /** How the rows on screen share out the room under them, while one runs off the foot. */
-private fun LazyListState.spread(): Spread? {
+private fun LazyListState.spread(maxGap: Int, screen: Int): Spread? {
     val bottom = layoutInfo.viewportSize.height
+    // The rows are being measured in a list taller than the screen: no page to share out.
+    if (screen > 0 && bottom > screen) return null
     val rows = rows()
     val cut = rows.firstOrNull { it.offset + it.size > bottom } ?: return null
     // A row taller than the screen, read a screen at a time, has nothing whole above it.
@@ -446,7 +543,7 @@ private fun LazyListState.spread(): Spread? {
     // Room wider than any row on the page is not what a row that did not fit left behind, but
     // the start of one far taller than the rest: shared out, it would scatter a few rows over
     // the screen. They stay as they come, and only the tall row waits for the next page.
-    val share = if (room > whole.maxOf { it.size }) 0 else room
+    val share = if (room > whole.maxOf { it.size }) 0 else spreadShare(room, last.index - whole.first().index, maxGap)
     return Spread(whole.first().index, last.index, share, cut.index, bottom)
 }
 

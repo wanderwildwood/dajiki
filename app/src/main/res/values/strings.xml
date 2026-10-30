@@ -149,4 +149,5 @@
     <string name="licences_ofl">SIL Open Font License, version 1.1</string>
     <string name="licences_no_browser">No browser is installed.</string>
     <string name="licences_close">Close</string>
+    <string name="folio_of_approx">%1$d / ~%2$d</string>
 </resources>
