@@ -3,6 +3,8 @@
 A text editor that opens in landscape and stays there, for an E Ink phone with a Bluetooth
 keyboard plugged into it. Built for the [Mudita Kompakt](https://mudita.com/products/kompakt/),
 and it will install on any Android 12 device.
+It keeps your writing as ordinary text files in a folder you choose, never writes over a sheet
+that changed somewhere else, asks for no permissions, and has no network access.
 
 *Dajiki* is 打字機 — the character-striking machine. Nobody has said it in Japanese since the
 war; タイプライター is the live word. The old one is here on purpose, for a machine that does
