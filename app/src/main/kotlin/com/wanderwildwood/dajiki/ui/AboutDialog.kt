@@ -49,7 +49,8 @@ fun AboutDialog(onDismiss: () -> Unit) {
     // Privacy and Terms would take pages. The body pages on whole rows; Close stays outside it.
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
       Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-       Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp, vertical = 8.dp)) {
+       androidx.compose.runtime.CompositionLocalProvider(LocalListBleed provides 20.dp) {
+Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp, vertical = 8.dp)) {
         TextMMD(
             text = stringResource(R.string.about_title, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodyLarge,
@@ -104,6 +105,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) { TextMMD(text = stringResource(R.string.about_close), style = MaterialTheme.typography.bodySmall) }
        }
+}
       }
     }
 }

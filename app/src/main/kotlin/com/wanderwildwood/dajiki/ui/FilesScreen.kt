@@ -116,7 +116,8 @@ private fun Sheets(
 ) {
     run {
         PagedColumn(
-            Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            Modifier.fillMaxSize(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 12.dp),
         ) {
             item {
                 Row(
