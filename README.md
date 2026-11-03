@@ -8,7 +8,7 @@ that changed somewhere else, asks for no permissions, and has no network access.
 
 *Dajiki* is 打字機 — the character-striking machine. Nobody has said it in Japanese since the
 war; タイプライター is the live word. The old one is here on purpose, for a machine that does
-one thing slowly on a grey screen.
+one thing slowly on a gray screen.
 
 Not a fork. Written from scratch in Kotlin and Jetpack Compose, using Mudita's own
 [MMD](https://github.com/mudita/MMD) design system so it looks like the apps the phone
@@ -133,7 +133,7 @@ For updates without doing this by hand, add this repository to
 
     https://github.com/wanderwildwood/dajiki
 
-## Licence
+## License
 
 GNU General Public License v3.0 only. Copyright wander wildwood.
 
