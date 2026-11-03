@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -136,7 +137,7 @@ private fun Sheets(
                     Spacer(Modifier.width(10.dp))
                     TextMMD(text = stringResource(R.string.files_new_sheet), style = MaterialTheme.typography.bodyMedium)
                 }
-                HorizontalDividerMMD()
+                DottedRule(start = 0.dp, end = 0.dp)
             }
 
             if (sheets.isEmpty()) {
@@ -157,8 +158,11 @@ private fun Sheets(
                 }
             }
 
-            items(sheets, key = { it.uri.toString() }) { sheet ->
-                SheetRow(sheet, onOpen = { onOpen(sheet) }, onDelete = { onDelete(sheet) })
+            itemsIndexed(sheets, key = { _, it -> it.uri.toString() }) { i, sheet ->
+                Column {
+                    SheetRow(sheet, onOpen = { onOpen(sheet) }, onDelete = { onDelete(sheet) })
+                    if (i < sheets.lastIndex) DottedRule(start = 0.dp, end = 0.dp)
+                }
             }
         }
     }
