@@ -21,12 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import kotlinx.coroutines.delay
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -172,19 +168,13 @@ private fun Sheets(
  * One sheet, and the only way to be rid of it.
  *
  * The row asks rather than a dialog: one repaint instead of two, and the question is put in
- * the place the answer belongs. It disarms itself after six seconds, so a stray tap leaves
- * nothing live for whoever picks the phone up next, and tapping the row while it is armed
- * puts it away rather than opening the sheet.
+ * the place the answer belongs. It stays armed, with no timer, until the next other touch,
+ * Back or leaving the screen, so a stray tap leaves nothing live for whoever picks the phone
+ * up next, and tapping the row while it is armed puts it away rather than opening the sheet.
  */
 @Composable
 private fun SheetRow(sheet: Sheet, onOpen: () -> Unit, onDelete: () -> Unit) {
-    var armed by remember(sheet.uri) { mutableStateOf(false) }
-    LaunchedEffect(armed) {
-        if (armed) {
-            delay(6000)
-            armed = false
-        }
-    }
+    var armed by rememberArmedFlag(sheet.uri)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

@@ -19,7 +19,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,6 +37,7 @@ import com.wanderwildwood.dajiki.ui.PageScreen
 import com.wanderwildwood.dajiki.ui.SettingsScreen
 import com.wanderwildwood.dajiki.ui.monochrome
 import com.wanderwildwood.dajiki.write.PageViewModel
+import com.wanderwildwood.dajiki.ui.ArmedScope
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
             // for as long as a field has focus.
             CompositionLocalProvider(LocalCursorBlinkEnabled provides false) {
                 ThemeMMD(colorScheme = monochrome) {
-                    Typewriter(this)
+                    ArmedScope { Typewriter(this) }
                 }
             }
         }
