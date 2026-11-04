@@ -135,9 +135,9 @@ fun PageScreen(
             lineLimits = TextFieldLineLimits.MultiLine(),
             /*
              * Three steps of the house scale, taken far enough apart to be worth choosing
-             * between. The body ramp is not: bodySmall, bodyMedium and bodyLarge are 15, 18
-             * and 20sp, which on this panel measured 17, 20 and 21 pixels of cap height —
-             * one pixel between Medium and Large, and a reader who moved the setting and saw
+             * between. The body ramp is not: bodySmall, bodyMedium and bodyLarge are 16 (the
+             * house floor, raised from 15), 18 and 20sp; at 15, 18 and 20 this panel measured
+             * 17, 20 and 21 pixels of cap height — one pixel between Medium and Large, and a reader who moved the setting and saw
              * nothing move reported the setting as broken. That ramp sizes a label beside a
              * switch; this is the text somebody reads at arm's length for an afternoon.
              */
