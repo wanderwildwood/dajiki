@@ -68,24 +68,33 @@ fun LicencesScreen(
         LicencePageScreen(page, labels, isApp = open == APP_ROW_KEY, onBack = { open = null }, modifier = modifier)
         return
     }
-    LicencesFrame(modifier, title = if (showTitle) labels.title else null, back = if (showBackButton) labels.back else null, onBack = onBack) { pageModifier ->
-        // MMD's list turns a fixed FOUR ROWS per page whatever their heights, so the rows are made one
-        // height and the list exactly four of them tall: every page is whole rows, the last ends flush.
-        BoxWithConstraints(pageModifier) {
-            val density = LocalDensity.current
-            val body = MaterialTheme.typography.bodyMedium
-            val small = MaterialTheme.typography.bodySmall
-            val plan = with(density) {
-                licenceListPlan(
-                    availablePx = maxHeight.roundToPx(),
-                    verticalPadPx = ROW_PAD.roundToPx(),
-                    titleLinePx = lineHeightPx(body),
-                    subtitleLinePx = lineHeightPx(small),
-                )
-            }
-            val rowHeight = with(density) { plan.rowPx.toDp() }
-            PagedColumn(modifier = Modifier.fillMaxWidth().height(with(density) { plan.listPx.toDp() }), state = listState) {
-                licenceRows(data).forEach { r -> item(key = r.key) { LicenceRowView(r, rowHeight, plan.titleLines) { open = r.key } } }
+    val density = LocalDensity.current
+    val body = MaterialTheme.typography.bodyMedium
+    val small = MaterialTheme.typography.bodySmall
+    val rowNeed = with(density) { licenceRowNeedPx(ROW_PAD.roundToPx(), lineHeightPx(body), lineHeightPx(small)) }
+    BoxWithConstraints(modifier) {
+        // The heading stays only where the list under it still holds four readable rows; in landscape
+        // (a short dialog) it would leave rows too short to read, so the rows get its room instead.
+        val keepHeading = showTitle && with(density) {
+            val withHeading = maxHeight - (TITLE_LINE + 10.dp) - (if (showBackButton) BACK_ROOM else 0.dp)
+            licenceListKeepsHeading(withHeading.roundToPx(), rowNeed)
+        }
+        LicencesFrame(Modifier.fillMaxWidth().height(maxHeight), title = if (keepHeading) labels.title else null, back = if (showBackButton) labels.back else null, onBack = onBack) { pageModifier ->
+            // Every row is one height, at least [LICENCE_MIN_ROW_PX], and the list exactly a whole number of
+            // them tall (four where there is room, fewer in landscape): every page is whole rows, the last ends flush.
+            BoxWithConstraints(pageModifier) {
+                val plan = with(density) {
+                    licenceListPlan(
+                        availablePx = maxHeight.roundToPx(),
+                        verticalPadPx = ROW_PAD.roundToPx(),
+                        titleLinePx = lineHeightPx(body),
+                        subtitleLinePx = lineHeightPx(small),
+                    )
+                }
+                val rowHeight = with(density) { plan.rowPx.toDp() }
+                PagedColumn(modifier = Modifier.fillMaxWidth().height(with(density) { plan.listPx.toDp() }), state = listState) {
+                    licenceRows(data).forEach { r -> item(key = r.key) { LicenceRowView(r, rowHeight, plan.titleLines) { open = r.key } } }
+                }
             }
         }
     }
@@ -321,8 +330,8 @@ private fun LicencesLinkRow(text: String, underline: Boolean = true, onClick: ()
 private val TITLE_LINE: Dp = 28.dp
 private val BACK_ROOM: Dp = 60.dp
 
-/** Padding above and below a list row's text. */
-private val ROW_PAD: Dp = 6.dp
+/** Least padding above and below a list row's text (the text is centered in the row); 4 dp lets three rows of at least 64 px share the landscape dialog. */
+private val ROW_PAD: Dp = 4.dp
 
 /** The gap between rows of a text page, a heading's padding and a link row's least height (as drawn below). */
 private val PAGE_GAP: Dp = 8.dp

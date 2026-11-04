@@ -174,25 +174,39 @@ fun licenceParagraphs(text: String): List<String> =
         .map { block -> block.lines().joinToString(" ") { it.trim() }.trim() }
         .filter { it.isNotEmpty() }
 
-/** How many rows MMD's list turns per page: `LazyColumnMMD`'s `scrollStep`, which `PagedColumn` leaves at its default. */
+/** The most rows a page of the Licences list holds; fewer when a row would otherwise be too short to read. */
 const val LICENCE_ROWS_PER_PAGE = 4
 
+/** No Licences row is shorter than this, in px (Mudita's review, 4 Nov 2026: rows of at least 64 px). */
+const val LICENCE_MIN_ROW_PX = 64
+
 /**
- * How the Licences list is laid out so that a page is exactly [LICENCE_ROWS_PER_PAGE] whole rows.
- * MMD's list moves a fixed number of ROWS per swipe or chevron press, whatever their heights, so
- * with rows of differing heights a page ends mid-row (or leaves room for part of the next one), and
- * the last page, which the list shifts back to end at the final row, starts mid-row. If every row
- * is the same height and the list is exactly that many rows tall, every page is whole rows and the
- * last ends flush. [rowPx] is that height, [listPx] the list's height (leftover pixels are given up,
- * never shown as a sliver), [titleLines] how many lines the row's name may take (the rest is
- * ellipsised; the library's page shows it in full).
+ * How the Licences list is laid out so that a page is exactly [rowsPerPage] whole rows of one
+ * height: [rowPx] is that height, [listPx] the list's height (leftover pixels are given up, never
+ * shown as a sliver), [titleLines] how many lines the row's name may take (the rest is ellipsised;
+ * the library's page shows it in full). The list turns on whole rows, so a list exactly that many
+ * rows tall shows every page whole and the last one flush.
  */
-data class LicenceListPlan(val rowPx: Int, val listPx: Int, val titleLines: Int)
+data class LicenceListPlan(val rowPx: Int, val listPx: Int, val titleLines: Int, val rowsPerPage: Int)
+
+/** The least height a list row needs: its padding, one name line and the subtitle line, and never under [minRowPx]. */
+fun licenceRowNeedPx(verticalPadPx: Int, titleLinePx: Int, subtitleLinePx: Int, minRowPx: Int = LICENCE_MIN_ROW_PX): Int =
+    maxOf(minRowPx, 2 * verticalPadPx + titleLinePx + subtitleLinePx, 1)
+
+/**
+ * Whether the list's heading can stay above it: only when the list under it still has room for
+ * [rowsPerPage] rows of [rowNeedPx]. In landscape it does not, and the heading gives its room to the
+ * rows (the dialog was opened from the Licenses row, so the heading says nothing new there).
+ */
+fun licenceListKeepsHeading(listPxWithHeading: Int, rowNeedPx: Int, rowsPerPage: Int = LICENCE_ROWS_PER_PAGE): Boolean =
+    listPxWithHeading >= rowsPerPage * rowNeedPx
 
 /**
  * [availablePx] is the height the list has; [verticalPadPx] the padding above and below a row's
- * text, [titleLinePx] and [subtitleLinePx] the height of one line of each. The name gets as many
- * lines as fit beside the one subtitle line, from one to [maxTitleLines].
+ * text, [titleLinePx] and [subtitleLinePx] the height of one line of each. A page holds as many
+ * rows as fit at their least height ([licenceRowNeedPx]), at most [rowsPerPage], at least one; the
+ * rows share the height out evenly. The name gets as many lines as fit beside the one subtitle
+ * line, from one to [maxTitleLines].
  */
 fun licenceListPlan(
     availablePx: Int,
@@ -201,11 +215,14 @@ fun licenceListPlan(
     subtitleLinePx: Int,
     rowsPerPage: Int = LICENCE_ROWS_PER_PAGE,
     maxTitleLines: Int = 2,
+    minRowPx: Int = LICENCE_MIN_ROW_PX,
 ): LicenceListPlan {
-    val row = (availablePx / rowsPerPage).coerceAtLeast(1)
+    val need = licenceRowNeedPx(verticalPadPx, titleLinePx, subtitleLinePx, minRowPx)
+    val rows = (availablePx / need).coerceIn(1, rowsPerPage.coerceAtLeast(1))
+    val row = (availablePx / rows).coerceAtLeast(1)
     val room = row - 2 * verticalPadPx - subtitleLinePx
     val lines = (room / titleLinePx.coerceAtLeast(1)).coerceIn(1, maxTitleLines)
-    return LicenceListPlan(rowPx = row, listPx = row * rowsPerPage, titleLines = lines)
+    return LicenceListPlan(rowPx = row, listPx = row * rows, titleLines = lines, rowsPerPage = rows)
 }
 
 /**
