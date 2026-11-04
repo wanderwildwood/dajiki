@@ -1,6 +1,7 @@
 package com.wanderwildwood.dajiki.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -120,10 +121,11 @@ class LicencesLogicTest {
         assertEquals(1000, plan.listPx)
         assertEquals(0, plan.listPx % plan.rowPx)
         assertEquals(2, plan.titleLines)
+        assertEquals(4, plan.rowsPerPage)
     }
 
     @Test fun listPlanShortensTheNameWhenTheRowIsTight() {
-        // 4 rows of 80 px: 80 - 24 - 34 = 22 px left, less than one title line; still one line, never zero.
+        // a row needs 24 + 40 + 34 = 98 px: three rows of 106 px, 106 - 58 = 48 px left, room for one name line.
         assertEquals(1, licenceListPlan(320, 12, 40, 34).titleLines)
         // a very tall row never takes more than two lines
         assertEquals(2, licenceListPlan(4000, 12, 40, 34).titleLines)
@@ -132,7 +134,28 @@ class LicencesLogicTest {
     @Test fun listPlanSurvivesNoRoom() {
         val plan = licenceListPlan(0, 12, 40, 34)
         assertEquals(1, plan.rowPx)
-        assertEquals(4, plan.listPx)
+        assertEquals(1, plan.listPx)
+        assertEquals(1, plan.rowsPerPage)
+    }
+
+    @Test fun landscapeRowsAreNeverShorterThan64PxAndPagesAreWhole() {
+        // The Kompakt in landscape (210 dpi): the dialog leaves about 198 px for the list without its
+        // heading, a row needs 16 + 26 + 24 = 66 px. Before, four rows of 49 px or 37 px were cut off.
+        val plan = licenceListPlan(availablePx = 198, verticalPadPx = 8, titleLinePx = 26, subtitleLinePx = 24)
+        assertEquals(3, plan.rowsPerPage)
+        assertEquals(66, plan.rowPx)
+        assertEquals(198, plan.listPx)
+        // short text lines still give rows of at least 64 px
+        val tight = licenceListPlan(availablePx = 200, verticalPadPx = 2, titleLinePx = 10, subtitleLinePx = 10)
+        assertTrue(tight.rowPx >= LICENCE_MIN_ROW_PX)
+        assertEquals(0, tight.listPx % tight.rowPx)
+        // portrait keeps its four rows
+        assertEquals(4, licenceListPlan(348, 8, 26, 24).rowsPerPage)
+    }
+
+    @Test fun headingStaysOnlyWhereFourRowsStillFit() {
+        assertFalse(licenceListKeepsHeading(listPxWithHeading = 148, rowNeedPx = 66))
+        assertTrue(licenceListKeepsHeading(listPxWithHeading = 348, rowNeedPx = 66))
     }
 
     @Test fun lastPageEndsOnTheFinalRowAndNoPageIsShort() {
