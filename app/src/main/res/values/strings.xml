@@ -89,7 +89,7 @@
 
     <!-- %1$s is the version number -->
     <string name="about_title">Typewriter %1$s</string>
-    <string name="about_body">Your writing is ordinary text files in the folder you chose. They stay there if this app is uninstalled, and any other app can open them.</string>
+    <string name="about_body">A text editor that opens in landscape and stays there, for writing with a keyboard connected to the phone. What you write is ordinary text files in a folder you choose, which any other app can open.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy">Everything you write stays on this phone. The app has no internet access, so nothing is sent anywhere, and nothing is collected about you.</string>
     <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. Backups and exports go only where you choose to save them.</string>
@@ -134,7 +134,7 @@
     <string name="licences_title">Licenses</string>
     <string name="licences_source_head">Source code</string>
     <string name="licences_no_text">%s needs no license text here.</string>
-    <string name="licences_licence">Typewriter is free software under the GNU General Public License, version 3 only. Copyright wander wildwood.</string>
+    <string name="licences_licence">Typewriter is free software: GPL-3.0-only, copyright wander wildwood. What it is built on keeps its own licenses, listed below.</string>
     <string name="licences_back">Back</string>
     <string name="licences_full_head">Full texts</string>
     <string name="licences_full_gpl">GNU General Public License v3 (full text)</string>
@@ -143,6 +143,10 @@
     <!-- shared-about: contact row + privacy section (edit in /opt/projects/shared-about) -->
     <string name="about_write_to">Write to %1$s</string>
     <string name="about_no_mail_app">No email app is installed. The address is %1$s.</string>
+    <string name="about_open_drawer">Open %1$s</string>
+    <string name="about_close_drawer">Close %1$s</string>
+    <string name="about_contact_head">Contact</string>
+    <string name="about_links_head">Links</string>
     <string name="privacy_who_title">Who we are</string>
     <string name="privacy_who">This app is made by wander wildwood, an independent developer: one person, not a company. That makes wander wildwood the data controller for anything the app itself handles, and that is very little: what you put in stays on this phone unless you send it somewhere yourself, and nothing comes to the developer.</string>
     <string name="privacy_contact_title">How to contact us</string>
