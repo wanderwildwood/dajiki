@@ -92,7 +92,7 @@
     <string name="about_body">A text editor that opens in landscape and stays there, for writing with a keyboard connected to the phone. What you write is ordinary text files in a folder you choose, which any other app can open.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy">Everything you write stays on this phone. The app has no internet access, so nothing is sent anywhere, and nothing is collected about you.</string>
-    <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. Backups and exports go only where you choose to save them.</string>
+    <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. Your sheets stay in that folder if this app is uninstalled. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. Backups and exports go only where you choose to save them.</string>
     <string name="about_terms_title">Terms</string>
     <string name="about_terms">This app is free software under the GNU General Public License v3. It comes with no warranty: use it at your own risk.</string>
     <!-- The name of the app's licence -->
