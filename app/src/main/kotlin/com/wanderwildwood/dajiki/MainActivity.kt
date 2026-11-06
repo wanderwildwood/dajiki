@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -97,7 +96,7 @@ private fun Typewriter(
     }
 
     val choose = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree(),
+        FilesOpenTree(),
     ) { picked ->
         if (picked != null) {
             // Without this the grant lasts only until the app is killed. It is allowed to
