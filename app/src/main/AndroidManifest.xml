@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- No permissions. The folder is handed over by the reader through the system's own
-         picker, which grants access to that folder and nothing else, so there is no
+    <!-- No permissions. The folder is handed over by the reader through a folder picker
+         (Cabinet's, or the system's own), which grants access to that folder and nothing else, so there is no
          storage permission to ask for. There is no INTERNET permission either: the one
          address in the app is opened by handing it to a browser. -->
 
@@ -22,7 +22,7 @@
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
-        <!-- Cabinet, which draws its own folder chooser for this panel; without it the
+        <!-- Cabinet, which draws its own folder chooser for Settings; without it the
              phone's stock one is used. -->
         <package android:name="com.wanderwildwood.tana" />
     </queries>
