@@ -115,6 +115,7 @@ private fun Sheets(
         PagedColumn(
             Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 12.dp),
+            showCutRow = true,
         ) {
             item {
                 Row(
