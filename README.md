@@ -54,6 +54,14 @@ line needed to be attached to.
   has none. Tap a day to open its sheet, or to choose between several. ‹ and › step the months.
 - **Search.** Every sheet in the folder, searched as plain text in any case. Each matching
   line is a row with its sheet's name; tapping it opens the sheet with the cursor at the word.
+- **The diary in its own folder**, if you want it apart: Settings can keep today's pages in a
+  `Diary` folder inside the one you chose. Sheets then lists the rest; By day and Search show
+  both. Off by default.
+- **A lock**, using the phone's own screen lock (its PIN, pattern or password) before the diary
+  opens, or before the whole app does. It asks again after three minutes away. It keeps the
+  pages from someone holding the unlocked phone, nothing more: they are still ordinary files
+  in your folder, which any app that can see the folder can read. It needs a screen lock on
+  the phone, and asks for no permission.
 - **Keeps your writing as ordinary text files in a folder you choose**, through the system
   picker — so it can be a folder a sync app already owns, and the files are still there if
   this app is uninstalled. No storage permission is asked for, because that grant is not a

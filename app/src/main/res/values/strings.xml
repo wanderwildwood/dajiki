@@ -108,6 +108,25 @@
     <string name="settings_turn_device">Turns with the phone</string>
     <!-- On: the app opens on the file for today's date instead of the file last left open -->
     <string name="settings_open_to_today">Open to today\'s page</string>
+    <!-- On: today's pages are made in a folder called Diary inside the chosen folder. "Diary" is the folder's name on disk and stays in English -->
+    <string name="settings_diary_folder">Keep the diary in its own folder</string>
+    <string name="settings_diary_folder_note">Today\'s pages go in a folder called Diary inside this one, and Sheets lists the rest. By day and Search show both.</string>
+    <!-- Asks for the phone's own screen lock (PIN, pattern or password) -->
+    <string name="settings_lock">Lock</string>
+    <string name="settings_lock_off">Off</string>
+    <string name="settings_lock_diary">The diary</string>
+    <string name="settings_lock_app">The whole app</string>
+    <string name="settings_lock_note_diary">Asks for your phone\'s lock before the diary opens. The pages are still ordinary files in your folder.</string>
+    <string name="settings_lock_note_app">Asks for your phone\'s lock before the app opens. The sheets are still ordinary files in your folder.</string>
+    <string name="settings_lock_note_no_screen_lock">Needs a screen lock on the phone. Set one in the phone\'s settings first.</string>
+    <!-- Titles of Android's own confirm-your-PIN screen -->
+    <string name="lock_title_diary">Unlock the diary</string>
+    <string name="lock_title_app">Unlock Typewriter</string>
+    <string name="lock_screen_diary">The diary is locked.</string>
+    <string name="lock_screen_app">Typewriter is locked.</string>
+    <string name="lock_screen_note">It opens with your phone\'s lock.</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_back">Back to sheets</string>
     <string name="settings_word_count">Count the words</string>
     <string name="settings_word_count_note">Counted as runs between spaces, so it is wrong for a language that does not use them.</string>
     <string name="settings_text_size">Text size</string>
@@ -148,6 +167,8 @@
     <!-- Trouble: a dialog that stays until it is read -->
 
     <!-- Button that closes the trouble dialog -->
+    <string name="trouble_lock_needs_screen_lock">The lock uses your phone\'s own screen lock, and this phone has none. Set one in the phone\'s settings, then turn the lock on here.</string>
+    <string name="trouble_lock_gone">The lock is off. It uses your phone\'s screen lock, and the phone no longer has one.</string>
     <string name="trouble_close">Close</string>
     <string name="trouble_not_remembered">That folder opened, but the phone would not let it be remembered. It will need choosing again next time.</string>
     <string name="trouble_folder_unreadable">That folder could not be read. Choose it again in Settings.</string>

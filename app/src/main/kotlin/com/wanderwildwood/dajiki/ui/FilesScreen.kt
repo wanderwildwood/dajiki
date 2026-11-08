@@ -41,6 +41,7 @@ import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Reading
 import com.wanderwildwood.dajiki.write.Sheet
 import com.wanderwildwood.dajiki.write.Showing
+import com.wanderwildwood.dajiki.write.sheetsTab
 import java.time.LocalDate
 
 /** What the folder screen can be asked to do, gathered so the screen and its three views share one list. */
@@ -123,7 +124,7 @@ fun FilesScreen(state: PageState, looking: Looking, act: FolderActions) {
                 state.folder == null -> NoFolder(act.chooseFolder)
                 looking.showing == Showing.DAYS -> DaysView(state.sheets, looking, act)
                 looking.showing == Showing.SEARCH -> SearchView(looking, act)
-                else -> Sheets(state.sheets, state.reading, act)
+                else -> Sheets(sheetsTab(state.sheets, state.diaryFolder), state.reading, act)
             }
         }
     }

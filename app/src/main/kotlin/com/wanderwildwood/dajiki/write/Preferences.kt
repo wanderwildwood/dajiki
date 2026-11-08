@@ -156,6 +156,20 @@ class Preferences(context: Context) {
         get() = store.getBoolean(OPEN_TO_TODAY, false)
         set(value) = store.edit().putBoolean(OPEN_TO_TODAY, value).apply()
 
+    /**
+     * Whether today's pages are made in a Diary folder inside the chosen one, with the Sheets
+     * tab listing the rest. Off by default, as the diary itself is.
+     */
+    var diaryFolder: Boolean
+        get() = store.getBoolean(DIARY_FOLDER, false)
+        set(value) = store.edit().putBoolean(DIARY_FOLDER, value).apply()
+
+    /** What the phone's own lock is asked for before: nothing, the diary, or the whole app. */
+    var lock: LockScope
+        get() = runCatching { LockScope.valueOf(store.getString(LOCK, null) ?: "") }
+            .getOrDefault(LockScope.OFF)
+        set(value) = store.edit().putString(LOCK, value.name).apply()
+
     /** The sheet that was open when the app was last put down, so it opens there again. */
     var lastOpen: Uri?
         get() = store.getString(LAST_OPEN, null)?.let(Uri::parse)
@@ -171,5 +185,7 @@ class Preferences(context: Context) {
         const val WORD_COUNT = "word_count"
         const val LAST_OPEN = "last_open"
         const val OPEN_TO_TODAY = "open_to_today"
+        const val DIARY_FOLDER = "diary_folder"
+        const val LOCK = "lock"
     }
 }

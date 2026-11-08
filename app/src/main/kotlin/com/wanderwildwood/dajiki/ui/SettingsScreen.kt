@@ -31,7 +31,9 @@ import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.dajiki.R
+import android.app.KeyguardManager
 import com.wanderwildwood.dajiki.write.Format
+import com.wanderwildwood.dajiki.write.LockScope
 import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.next
@@ -56,6 +58,8 @@ fun SettingsScreen(
     onSizePerSheet: () -> Unit,
     onWordCount: () -> Unit,
     onFormat: (Format) -> Unit,
+    onDiaryFolder: () -> Unit,
+    onLock: (LockScope) -> Unit,
 ) {
     // Saveable: turning the phone round to see how it looks must not leave Settings.
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
@@ -110,6 +114,36 @@ fun SettingsScreen(
                     note = null,
                     checked = state.openToToday,
                     onClick = onOpenToToday,
+                )
+            }
+            item {
+                // Asked for from the forum (t/16264): the diary apart from the other writing.
+                Toggle(
+                    title = stringResource(R.string.settings_diary_folder),
+                    note = stringResource(R.string.settings_diary_folder_note),
+                    checked = state.diaryFolder,
+                    onClick = onDiaryFolder,
+                )
+            }
+            item {
+                // Asked for from the forum too. The note says what it does not do: the pages
+                // are files in the reader's folder, open to any app that can see it.
+                val phoneLocked = remember(state.lock) {
+                    context.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
+                }
+                Setting(
+                    title = stringResource(R.string.settings_lock),
+                    value = when (state.lock) {
+                        LockScope.OFF -> stringResource(R.string.settings_lock_off)
+                        LockScope.DIARY -> stringResource(R.string.settings_lock_diary)
+                        LockScope.APP -> stringResource(R.string.settings_lock_app)
+                    },
+                    note = when {
+                        state.lock == LockScope.APP -> stringResource(R.string.settings_lock_note_app)
+                        phoneLocked -> stringResource(R.string.settings_lock_note_diary)
+                        else -> stringResource(R.string.settings_lock_note_no_screen_lock)
+                    },
+                    onClick = { onLock(next(state.lock)) },
                 )
             }
             item {
@@ -222,7 +256,7 @@ private fun Toggle(title: String, note: String?, checked: Boolean, onClick: () -
 }
 
 @Composable
-private fun Setting(title: String, value: String, onClick: () -> Unit) {
+private fun Setting(title: String, value: String, onClick: () -> Unit, note: String? = null) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -231,5 +265,6 @@ private fun Setting(title: String, value: String, onClick: () -> Unit) {
     ) {
         TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
         TextMMD(text = value, style = MaterialTheme.typography.labelSmall)
+        if (note != null) TextMMD(text = note, style = MaterialTheme.typography.labelSmall)
     }
 }

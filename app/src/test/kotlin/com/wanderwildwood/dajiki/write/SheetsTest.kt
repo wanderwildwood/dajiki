@@ -66,4 +66,26 @@ class SheetsTest {
         assertNull(withExtension("2026-11-08 1432 (1).txt", "txt"))
         assertNull(withExtension("2026-11-08.TXT", "txt"))
     }
+
+    @Test
+    fun aDaysPageIsTheDiaryWhereverItIs() {
+        assertTrue(isDiaryPage("2026-11-08.txt", inDiaryFolder = false))
+        assertTrue(isDiaryPage("2026-11-08.md", inDiaryFolder = false))
+        assertTrue(isDiaryPage("2026-11-08", inDiaryFolder = false))
+        assertTrue(isDiaryPage("Notes from the walk.txt", inDiaryFolder = true))
+    }
+
+    @Test
+    fun anOrdinarySheetIsNotTheDiary() {
+        assertFalse(isDiaryPage("2026-11-08 1432.txt", inDiaryFolder = false))
+        assertFalse(isDiaryPage("Letter to Ada.txt", inDiaryFolder = false))
+    }
+
+    @Test
+    fun theSheetsTabLeavesTheDiaryFolderOutOnlyWhenAsked() {
+        // (name, in the Diary folder)
+        val all = listOf("2026-11-08.txt" to true, "Letter to Ada.txt" to false)
+        assertEquals(all, sheetsTab(all, diaryFolder = false) { it.second })
+        assertEquals(listOf("Letter to Ada.txt"), sheetsTab(all, diaryFolder = true) { it.second }.map { it.first })
+    }
 }

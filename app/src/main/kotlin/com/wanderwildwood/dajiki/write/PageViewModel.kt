@@ -1,6 +1,7 @@
 package com.wanderwildwood.dajiki.write
 
 import android.app.Application
+import android.app.KeyguardManager
 import android.net.Uri
 import android.text.format.DateFormat
 import androidx.lifecycle.AndroidViewModel
@@ -78,6 +79,13 @@ data class PageState(
     val wordCount: Boolean = true,
     val format: Format = Format.PLAIN,
     val openToToday: Boolean = false,
+    /** Today's pages in a Diary folder of their own, and the Sheets tab without them. */
+    val diaryFolder: Boolean = false,
+    val lock: LockScope = LockScope.OFF,
+    /** The phone's lock was given this sitting, and the app has not been away long since. */
+    val unlocked: Boolean = false,
+    /** The phone's lock is to be asked for now; the activity puts the prompt up. */
+    val asking: Boolean = false,
     /** Something that went wrong, in words, shown until it is read and dismissed. */
     val trouble: String? = null,
 )
@@ -96,6 +104,10 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             wordCount = preferences.wordCount,
             format = preferences.format,
             openToToday = preferences.openToToday,
+            diaryFolder = preferences.diaryFolder,
+            lock = preferences.lock,
+            // The whole app locked: asked for as it opens.
+            asking = preferences.lock == LockScope.APP,
         ),
     )
     val state: StateFlow<PageState> = _state.asStateFlow()
@@ -219,13 +231,17 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun listNow(uri: Uri, reopen: Boolean = true) {
         run {
-            val sheets = runCatching { withContext(Dispatchers.IO) { folder.list(uri) } }
+            val sheets = runCatching { withContext(Dispatchers.IO) { folder.list(uri, state.value.diaryFolder) } }
             sheets.onSuccess { found ->
                 _state.update { it.copy(sheets = found, reading = Reading.DONE) }
                 // Back to whatever was being written when the app was last put down.
                 val last = preferences.lastOpen
                 if (reopen && last != null && state.value.opened == null) {
-                    found.firstOrNull { it.uri == last }?.let { open(it) }
+                    // Not a day's page past the diary lock: the folder rather than a prompt as
+                    // the app opens. Behind the whole-app lock it opens under the lock screen.
+                    found.firstOrNull { it.uri == last }
+                        ?.takeUnless { state.value.lock == LockScope.DIARY && !state.value.unlocked && isDiaryPage(it) }
+                        ?.let { openNow(it) }
                 }
                 // A search left open is answered again from the folder as it is now: the
                 // sheet just closed may have gained or lost the very line it found.
@@ -240,7 +256,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun open(sheet: Sheet, at: Int? = null) {
+    fun open(sheet: Sheet, at: Int? = null) = guarded(isDiaryPage(sheet)) { openNow(sheet, at) }
+
+    private fun openNow(sheet: Sheet, at: Int? = null) {
         saveNow()
         val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
@@ -283,7 +301,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * again later in the day, it gains a line with the time under what is there; nothing is
      * written until something is typed, so looking at the page changes nothing.
      */
-    fun openToday() {
+    fun openToday() = guarded(diarySide = true) { openTodayNow() }
+
+    private fun openTodayNow() {
         val where = state.value.folder ?: return
         val today = LocalDate.now()
         val current = state.value.opened?.sheet
@@ -291,19 +311,24 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         saveNow()
         val abandoned = untouched(current, pending)
         val format = state.value.format
+        val diary = state.value.diaryFolder
 
         viewModelScope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    val found = folder.list(where)
-                    val name = pageFor(found.map { it.name }, today, format)
-                    val existing = found.firstOrNull { it.name == name }
+                    val found = folder.list(where, diary)
+                    // With the diary in its own folder, its page there first; one made in the
+                    // folder itself before the switch was turned on is still found.
+                    val inDiary = found.filter { it.diary }
+                    val elsewhere = found.filterNot { it.diary }
+                    val existing = pageFor(inDiary.map { it.name }, today, format)?.let { name -> inDiary.firstOrNull { it.name == name } }
+                        ?: pageFor(elsewhere.map { it.name }, today, format)?.let { name -> elsewhere.firstOrNull { it.name == name } }
                     if (existing != null) {
                         // Stamped before the read, for the reason open() is.
                         val stamp = folder.stamp(existing.uri)
                         Today(existing, stamp, folder.read(existing.uri), found, made = false)
                     } else {
-                        val made = folder.create(where, format, dayName(today))
+                        val made = folder.create(where, format, dayName(today), diary = diary)
                         Today(made, folder.stamp(made.uri), "", listOf(made) + found, made = true)
                     }
                 }
@@ -344,7 +369,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         return SimpleDateFormat(pattern, Locale.getDefault()).format(Date())
     }
 
-    fun show(showing: Showing) = _looking.update { it.copy(showing = showing) }
+    /** By day and Search are the diary's side: By day lists its pages, Search reads them. */
+    fun show(showing: Showing) =
+        guarded(diarySide = showing != Showing.SHEETS) { _looking.update { it.copy(showing = showing) } }
 
     fun stepMonth(by: Long) = _looking.update { it.copy(month = it.month.plusMonths(by)) }
 
@@ -385,7 +412,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 // have brought in a sheet while the app was open, and a search that cannot
                 // find what is plainly in the folder is a search nobody trusts again.
                 val sheets = state.value.folder
-                    ?.let { where -> runCatching { folder.list(where) }.getOrNull() }
+                    ?.let { where -> runCatching { folder.list(where, state.value.diaryFolder) }.getOrNull() }
                     ?.also { found -> _state.update { it.copy(sheets = found) } }
                     ?: state.value.sheets
                 val hits = mutableListOf<Hit>()
@@ -618,7 +645,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
         runCatching {
             withContext(Dispatchers.IO) {
-                val copy = folder.createBeside(where, besideName(sheet.name))
+                val copy = folder.createBeside(where, besideName(sheet.name), sheet.diary)
                 folder.write(copy.uri, text)
                 copy to folder.stamp(copy.uri)
             }
@@ -720,7 +747,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             save(sheet, text)
             val moved = runCatching {
-                withContext(Dispatchers.IO) { folder.rename(sheet.uri, wanted, sheet.name) }
+                withContext(Dispatchers.IO) { folder.rename(sheet, wanted) }
             }.getOrElse { reason ->
                 say(getApplication<Application>().getString(R.string.trouble_rename_failed, sheet.name), reason); return@launch
             } ?: return@launch
@@ -762,6 +789,100 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val wanted = !state.value.openToToday
         preferences.openToToday = wanted
         _state.update { it.copy(openToToday = wanted) }
+    }
+
+    /** The diary in a folder of its own, or not; the folder is read again either way. */
+    fun toggleDiaryFolder() {
+        val wanted = !state.value.diaryFolder
+        preferences.diaryFolder = wanted
+        _state.update { it.copy(diaryFolder = wanted) }
+        state.value.folder?.let { list(it) }
+    }
+
+    /**
+     * Move the lock on to [wanted]. Changing a lock that is on asks for the phone's lock first,
+     * or it could be switched off by anybody holding the phone. Turning it on needs a screen
+     * lock on the phone; without one it stays off and says why.
+     */
+    fun setLock(wanted: LockScope) = guarded(diarySide = true) {
+        if (wanted != LockScope.OFF && !phoneHasLock()) {
+            _state.update { it.copy(trouble = getApplication<Application>().getString(R.string.trouble_lock_needs_screen_lock)) }
+            return@guarded
+        }
+        preferences.lock = wanted
+        // Whoever turned it on is the one holding the phone now.
+        _state.update { it.copy(lock = wanted, unlocked = true) }
+    }
+
+    private fun phoneHasLock(): Boolean =
+        getApplication<Application>().getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
+
+    /** What waits on the phone's lock being given: the page, the tab or the setting asked for. */
+    private var afterUnlock: (() -> Unit)? = null
+
+    /** Do [action] now, or once the phone's lock has been given if it [needsLock]. */
+    private fun guarded(diarySide: Boolean, action: () -> Unit) {
+        val now = state.value
+        if (!needsLock(now.lock, now.unlocked, diarySide)) {
+            action()
+            return
+        }
+        afterUnlock = action
+        _state.update { it.copy(asking = true) }
+    }
+
+    /** Ask for the phone's lock again: the button on the lock screen. */
+    fun askUnlock() = _state.update { it.copy(asking = true) }
+
+    /** What came back from the phone's lock. */
+    fun unlockAnswered(answer: Unlock) {
+        val waiting = afterUnlock
+        afterUnlock = null
+        when (answer) {
+            Unlock.DONE -> {
+                _state.update { it.copy(asking = false, unlocked = true) }
+                waiting?.invoke()
+            }
+            Unlock.CANCELLED -> _state.update { it.copy(asking = false) }
+            Unlock.NO_SCREEN_LOCK -> {
+                // The phone's screen lock was taken off since the lock was set. Nothing is
+                // left for it to ask for, so it is off, and the reader is told rather than
+                // shut out of their own writing.
+                preferences.lock = LockScope.OFF
+                _state.update {
+                    it.copy(
+                        lock = LockScope.OFF,
+                        asking = false,
+                        unlocked = true,
+                        trouble = getApplication<Application>().getString(R.string.trouble_lock_gone),
+                    )
+                }
+                waiting?.invoke()
+            }
+        }
+    }
+
+    /** When the app was last put away, for [relocks]. */
+    private var stoppedAt: Long? = null
+
+    /** The app has gone to the background. */
+    fun stopped() {
+        stoppedAt = System.currentTimeMillis()
+    }
+
+    /**
+     * The app is back. Away long enough, the lock asks again: the whole app at once; with the
+     * diary locked, By day and Search go back to Sheets, and a day's page left open is covered.
+     */
+    fun started() {
+        val away = relocks(stoppedAt, System.currentTimeMillis())
+        stoppedAt = null
+        val now = state.value
+        if (!away || now.lock == LockScope.OFF || !now.unlocked) return
+        afterUnlock = null
+        val covered = now.lock == LockScope.APP || now.opened?.sheet?.let(::isDiaryPage) == true
+        _state.update { it.copy(unlocked = false, asking = covered) }
+        if (now.lock == LockScope.DIARY) _looking.update { it.copy(showing = Showing.SHEETS) }
     }
 
     fun toggleWordCount() {

@@ -1,5 +1,7 @@
 package com.wanderwildwood.dajiki
 
+import android.app.Activity
+import android.app.KeyguardManager
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -7,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +37,10 @@ import com.mudita.mmd.components.text.TextMMD
 import com.wanderwildwood.dajiki.ui.EInkDialog
 import com.wanderwildwood.dajiki.ui.FilesScreen
 import com.wanderwildwood.dajiki.ui.FolderActions
+import com.wanderwildwood.dajiki.ui.LockScreen
+import com.wanderwildwood.dajiki.write.LockScope
+import com.wanderwildwood.dajiki.write.Unlock
+import com.wanderwildwood.dajiki.write.isDiaryPage
 import com.wanderwildwood.dajiki.write.Turn
 import com.wanderwildwood.dajiki.ui.PageScreen
 import com.wanderwildwood.dajiki.ui.SettingsScreen
@@ -124,11 +131,17 @@ private fun Typewriter(
     DisposableEffect(lifecycleOwner) {
         val watcher = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_STOP -> viewModel.saveNow()
+                Lifecycle.Event.ON_STOP -> {
+                    viewModel.saveNow()
+                    viewModel.stopped()
+                }
                 // Coming back is when a sync has most likely been and gone. If the open
                 // sheet moved on while the app was away and nothing here is unsaved, this
                 // shows what arrived rather than letting the next keystroke write over it.
-                Lifecycle.Event.ON_START -> viewModel.resumed()
+                Lifecycle.Event.ON_START -> {
+                    viewModel.started()
+                    viewModel.resumed()
+                }
                 else -> Unit
             }
         }
@@ -154,12 +167,53 @@ private fun Typewriter(
         }
     }
 
+    /*
+     * The lock. With the whole app locked, nothing shows until the phone's lock is given; with
+     * the diary locked, only a day's page left open when the app came back after a while.
+     */
+    val opened = state.opened
+    val covered = !state.unlocked && when (state.lock) {
+        LockScope.OFF -> false
+        LockScope.APP -> true
+        LockScope.DIARY -> opened != null && !settingsOpen && isDiaryPage(opened.sheet)
+    }
+    val lockTitle = stringResource(if (state.lock == LockScope.APP) R.string.lock_title_app else R.string.lock_title_diary)
+    /*
+     * Asked through the phone's own "confirm your PIN" screen (pattern or password, as the
+     * phone is set), which needs no permission: the app still asks for none. It is the older of
+     * Android's two ways in; the newer, BiometricPrompt, would add USE_BIOMETRIC to a manifest
+     * that is otherwise empty, for a fingerprint the Kompakt does not have. No second code to
+     * remember or lose, and nothing of it is kept here. A phone with no screen lock has nothing
+     * to ask for, and Android says so by handing back no screen at all.
+     */
+    val confirm = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        viewModel.unlockAnswered(if (result.resultCode == Activity.RESULT_OK) Unlock.DONE else Unlock.CANCELLED)
+    }
+    LaunchedEffect(state.asking) {
+        if (!state.asking) return@LaunchedEffect
+        val keyguard = activity.getSystemService(KeyguardManager::class.java)
+        @Suppress("DEPRECATION")
+        val ask = keyguard?.takeIf { it.isDeviceSecure }?.createConfirmDeviceCredentialIntent(lockTitle, null)
+        if (ask == null) {
+            viewModel.unlockAnswered(Unlock.NO_SCREEN_LOCK)
+        } else {
+            runCatching { confirm.launch(ask) }.onFailure { viewModel.unlockAnswered(Unlock.CANCELLED) }
+        }
+    }
+
     BackHandler(enabled = settingsOpen || state.opened != null) {
         if (settingsOpen) settingsOpen = false else viewModel.close()
     }
 
-    val opened = state.opened
     when {
+        covered -> LockScreen(
+            app = state.lock == LockScope.APP,
+            onUnlock = viewModel::askUnlock,
+            // Away from a locked page to the sheets, which the diary lock leaves open.
+            onBack = if (state.lock == LockScope.DIARY) viewModel::close else null,
+        )
+
+
         settingsOpen -> SettingsScreen(
             state = state,
             onClose = { settingsOpen = false },
@@ -170,6 +224,8 @@ private fun Typewriter(
             onSizePerSheet = viewModel::toggleSizePerSheet,
             onWordCount = viewModel::toggleWordCount,
             onFormat = viewModel::setFormat,
+            onDiaryFolder = viewModel::toggleDiaryFolder,
+            onLock = viewModel::setLock,
         )
 
         opened != null -> PageScreen(

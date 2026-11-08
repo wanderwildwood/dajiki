@@ -11,8 +11,35 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** One file in the folder: what it is called, where it is, and when it last changed. */
-data class Sheet(val uri: Uri, val name: String, val modified: Long)
+/**
+ * One file in the folder: what it is called, where it is, and when it last changed. [diary] is
+ * true for a sheet in the Diary folder inside the chosen one, which is only read while "Keep the
+ * diary in its own folder" is on.
+ */
+data class Sheet(val uri: Uri, val name: String, val modified: Long, val diary: Boolean = false)
+
+/** The folder inside the chosen one that the diary is kept in when it has a folder of its own. */
+const val DIARY_FOLDER = "Diary"
+
+/**
+ * Whether [sheet] belongs to the diary: it is in the Diary folder, or it is a day's page (the
+ * date alone for a name) wherever it is. What the diary lock covers.
+ */
+fun isDiaryPage(sheet: Sheet): Boolean = isDiaryPage(sheet.name, sheet.diary)
+
+/** [isDiaryPage] by the sheet's name and whether it is in the Diary folder. */
+fun isDiaryPage(name: String, inDiaryFolder: Boolean): Boolean =
+    inDiaryFolder || dayInName(name)?.let { isPageFor(name, it) } == true
+
+/**
+ * What the Sheets tab lists: everything, or with the diary in its own folder, everything but
+ * the diary, which By day and Search still show.
+ */
+fun sheetsTab(sheets: List<Sheet>, diaryFolder: Boolean): List<Sheet> = sheetsTab(sheets, diaryFolder) { it.diary }
+
+/** [sheetsTab] over anything that can say whether it is in the Diary folder. */
+fun <T> sheetsTab(sheets: List<T>, diaryFolder: Boolean, inDiaryFolder: (T) -> Boolean): List<T> =
+    if (diaryFolder) sheets.filterNot(inDiaryFolder) else sheets
 
 /**
  * What a sheet looked like from the outside at a moment: when the provider said it last
@@ -110,11 +137,46 @@ class Folder(context: Context) {
      * a folder of any size, on the processors these panels are attached to, that is the
      * difference between a list that appears and a list you wait for.
      */
-    fun list(folder: Uri): List<Sheet> {
-        val children = DocumentsContract.buildChildDocumentsUriUsingTree(
-            folder,
-            DocumentsContract.getTreeDocumentId(folder),
-        )
+    fun list(folder: Uri, diary: Boolean = false): List<Sheet> {
+        val sheets = listIn(folder, DocumentsContract.getTreeDocumentId(folder), diary = false)
+        val inDiary = if (diary) diaryFolder(folder, make = false)?.let { listIn(folder, it, diary = true) } else null
+        return (sheets + inDiary.orEmpty()).sortedByDescending { it.modified }
+    }
+
+    /**
+     * The document id of the Diary folder inside [folder], made first if [make] and there is
+     * none, or null. Found by name each time rather than remembered: it may have been renamed,
+     * deleted or brought in by a sync app since.
+     */
+    fun diaryFolder(folder: Uri, make: Boolean): String? {
+        val root = DocumentsContract.getTreeDocumentId(folder)
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(folder, root)
+        resolver.query(
+            children,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE,
+            ),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getString(1) == DIARY_FOLDER && cursor.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR) {
+                    return cursor.getString(0)
+                }
+            }
+        }
+        if (!make) return null
+        val parent = DocumentsContract.buildDocumentUriUsingTree(folder, root)
+        val made = DocumentsContract.createDocument(resolver, parent, DocumentsContract.Document.MIME_TYPE_DIR, DIARY_FOLDER)
+            ?: error("The folder would not take a Diary folder.")
+        return DocumentsContract.getDocumentId(made)
+    }
+
+    private fun listIn(folder: Uri, parent: String, diary: Boolean): List<Sheet> {
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(folder, parent)
         val columns = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
@@ -133,10 +195,11 @@ class Folder(context: Context) {
                     uri = DocumentsContract.buildDocumentUriUsingTree(folder, id),
                     name = name,
                     modified = cursor.getLong(3),
+                    diary = diary,
                 )
             }
         }
-        return sheets.sortedByDescending { it.modified }
+        return sheets
     }
 
     /**
@@ -192,14 +255,16 @@ class Folder(context: Context) {
      * carries the name. Everything holding the old one has to be told, which is why this
      * returns the sheet rather than a success flag.
      */
-    fun rename(uri: Uri, wanted: String, was: String): Sheet? {
+    fun rename(sheet: Sheet, wanted: String): Sheet? {
+        val uri = sheet.uri
+        val was = sheet.name
         val trimmed = wanted.trim()
         if (trimmed.isEmpty()) return null
         val extension = was.substringAfterLast('.', "")
         val name = if (extension.isNotEmpty() && !trimmed.contains('.')) "$trimmed.$extension" else trimmed
         if (name == was) return null
         val moved = DocumentsContract.renameDocument(resolver, uri, name) ?: return null
-        return Sheet(uri = moved, name = nameOf(moved) ?: name, modified = System.currentTimeMillis())
+        return Sheet(uri = moved, name = nameOf(moved) ?: name, modified = System.currentTimeMillis(), diary = sheet.diary)
     }
 
     /** Remove the sheet. Throws rather than returning false quietly if the provider refuses. */
@@ -259,14 +324,14 @@ class Folder(context: Context) {
      * plain text, and the provider may then add `.txt` on the end of it. An ugly name is an
      * acceptable price for not having to guess which copy to throw away.
      */
-    fun createBeside(folder: Uri, name: String): Sheet {
+    fun createBeside(folder: Uri, name: String, diary: Boolean = false): Sheet {
         val parent = DocumentsContract.buildDocumentUriUsingTree(
             folder,
-            DocumentsContract.getTreeDocumentId(folder),
+            (if (diary) diaryFolder(folder, make = true) else null) ?: DocumentsContract.getTreeDocumentId(folder),
         )
         val uri = DocumentsContract.createDocument(resolver, parent, mimeFor(name), name)
             ?: error("The folder would not take a second copy.")
-        return Sheet(uri = uri, name = nameOf(uri) ?: name, modified = System.currentTimeMillis())
+        return Sheet(uri = uri, name = nameOf(uri) ?: name, modified = System.currentTimeMillis(), diary = diary)
     }
 
     private fun mimeFor(name: String): String {
@@ -295,10 +360,12 @@ class Folder(context: Context) {
         format: Format,
         // Today's page passes its own name, the date alone; everything else is named for the minute.
         stamp: String = SimpleDateFormat("yyyy-MM-dd HHmm", Locale.ROOT).format(Date()),
+        // Today's page, with the diary in its own folder: made in the Diary folder.
+        diary: Boolean = false,
     ): Sheet {
         val parent = DocumentsContract.buildDocumentUriUsingTree(
             folder,
-            DocumentsContract.getTreeDocumentId(folder),
+            (if (diary) diaryFolder(folder, make = true) else null) ?: DocumentsContract.getTreeDocumentId(folder),
         )
         var uri: Uri
         if (format == Format.PLAIN) {
@@ -333,6 +400,7 @@ class Folder(context: Context) {
             uri = uri,
             name = nameOf(uri) ?: "$stamp.${format.extension}",
             modified = System.currentTimeMillis(),
+            diary = diary,
         )
     }
 }
