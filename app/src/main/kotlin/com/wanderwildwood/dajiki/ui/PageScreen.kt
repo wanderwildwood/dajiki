@@ -3,6 +3,7 @@ package com.wanderwildwood.dajiki.ui
 import android.view.KeyCharacterMap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +41,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import com.mudita.mmd.components.text.TextMMD
@@ -75,6 +78,7 @@ fun PageScreen(
     onEdited: (String) -> Unit,
     onSaveNow: () -> Unit,
     onNew: () -> Unit,
+    onToday: () -> Unit,
     onFiles: () -> Unit,
     onRename: (String) -> Unit,
     onSize: (Size) -> Unit,
@@ -88,11 +92,13 @@ fun PageScreen(
      *
      * Keyed on the opened sheet, so opening another one starts a fresh field with a fresh
      * history rather than carrying the last sheet's cursor, or its undo, into it. The cursor
-     * starts at the end, which is where the constructor puts it: a sheet is almost always
-     * opened to carry on, and the alternative is a reader who types their next sentence into
-     * the top of the last one.
+     * starts at the end: a sheet is almost always opened to carry on, and the alternative is a
+     * reader who types their next sentence into the top of the last one. A sheet opened from a
+     * search is the exception, and starts at the word that was found.
      */
-    val field = remember(opened) { TextFieldState(opened.text) }
+    val field = remember(opened) {
+        TextFieldState(opened.text, TextRange(opened.at ?: opened.text.length))
+    }
 
     // Every change out to the view model, which does its own waiting before it writes. A
     // change that leaves the text as it was is dropped there rather than here.
@@ -152,7 +158,7 @@ fun PageScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp)
                 .focusRequester(focus)
-                .onPreviewKeyEvent { event -> shortcut(event, onSaveNow, onNew, onFiles) }
+                .onPreviewKeyEvent { event -> shortcut(event, onSaveNow, onNew, onToday, onFiles) }
                 .textActions(field),
         )
 
@@ -182,7 +188,8 @@ fun PageScreen(
  * keyboard: a writer who has both hands on the keys should not have to reach for the screen
  * to save, start a page or go back to the folder.
  *
- * Ctrl-S, Ctrl-N and Ctrl-O because those are what a writer's fingers already do, and Escape
+ * Ctrl-S, Ctrl-N and Ctrl-O because those are what a writer's fingers already do, Ctrl-T for
+ * today's page because a diary is opened every day, and Escape
  * because a keyboard case has one and nothing else here uses it. Anything not claimed here
  * falls through untouched, which is what leaves the text field's own Home, End, page keys,
  * shift-selection and word-wise arrows working — none of that is reimplemented, because the
@@ -192,6 +199,7 @@ private fun shortcut(
     event: androidx.compose.ui.input.key.KeyEvent,
     onSaveNow: () -> Unit,
     onNew: () -> Unit,
+    onToday: () -> Unit,
     onFiles: () -> Unit,
 ): Boolean {
     if (event.type != KeyEventType.KeyDown) return false
@@ -210,6 +218,7 @@ private fun shortcut(
         's' -> { onSaveNow(); true }
         'n' -> { onNew(); true }
         'o' -> { onFiles(); true }
+        't' -> { onToday(); true }
         else -> false
     }
 }
@@ -285,24 +294,32 @@ private fun Foot(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clickable(onClick = onSize)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 10.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
         )
-
-        Spacer(Modifier.weight(1f))
 
         // The name is the way in to renaming it. A sheet is named for the minute it was
         // started, which is no name at all by the third one, and the place a reader looks
-        // for what a thing is called is the place it is written.
-        TextMMD(
-            text = name,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clickable(onClick = onRename)
-                .padding(start = 16.dp, end = 4.dp)
-                .wrapContentHeight(Alignment.CenterVertically),
-        )
+        // for what a thing is called is the place it is written. It takes what room is left
+        // and gives way first, on one line, so held upright a long name ends in "…" rather
+        // than pushing the count off the edge or the foot onto two lines.
+        // Where even that is too long (held upright, a dated name and a word count), the
+        // extension goes first: "2026-11-08" says which page this is, ".txt" does not.
+        var stemOnly by remember(name) { mutableStateOf(false) }
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            TextMMD(
+                text = if (stemOnly) name.substringBeforeLast('.', name) else name,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { if (it.hasVisualOverflow && !stemOnly) stemOnly = true },
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onRename)
+                    .padding(start = 8.dp, end = 4.dp)
+                    .wrapContentHeight(Alignment.CenterVertically),
+            )
+        }
         val wordCount = words?.let { pluralStringResource(R.plurals.page_word_count, it, it) }
         val notSaved = stringResource(R.string.page_not_saved)
         TextMMD(

@@ -51,6 +51,7 @@ fun SettingsScreen(
     onClose: () -> Unit,
     onChooseFolder: () -> Unit,
     onTurn: (Turn) -> Unit,
+    onOpenToToday: () -> Unit,
     onSize: (Size) -> Unit,
     onSizePerSheet: () -> Unit,
     onWordCount: () -> Unit,
@@ -95,9 +96,20 @@ fun SettingsScreen(
                     value = when (state.turn) {
                         Turn.ACROSS -> stringResource(R.string.settings_turn_across)
                         Turn.AROUND -> stringResource(R.string.settings_turn_around)
+                        Turn.UPRIGHT -> stringResource(R.string.settings_turn_upright)
                         Turn.DEVICE -> stringResource(R.string.settings_turn_device)
                     },
                     onClick = { onTurn(next(state.turn)) },
+                )
+            }
+            item {
+                // For keeping a diary: the app opens on today's page, made if need be, rather
+                // than on whatever sheet was left open. Off by default.
+                Toggle(
+                    title = stringResource(R.string.settings_open_to_today),
+                    note = null,
+                    checked = state.openToToday,
+                    onClick = onOpenToToday,
                 )
             }
             item {
@@ -192,7 +204,7 @@ private fun folderName(folder: Uri): String {
  * let the row around it take the press.
  */
 @Composable
-private fun Toggle(title: String, note: String, checked: Boolean, onClick: () -> Unit) {
+private fun Toggle(title: String, note: String?, checked: Boolean, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -202,7 +214,7 @@ private fun Toggle(title: String, note: String, checked: Boolean, onClick: () ->
     ) {
         Column(modifier = Modifier.weight(1f)) {
             TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
-            TextMMD(text = note, style = MaterialTheme.typography.labelSmall)
+            if (note != null) TextMMD(text = note, style = MaterialTheme.typography.labelSmall)
         }
         Spacer(Modifier.width(16.dp))
         SwitchMMD(checked = checked, onCheckedChange = null)

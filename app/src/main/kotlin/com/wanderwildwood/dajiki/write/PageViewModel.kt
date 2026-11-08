@@ -2,6 +2,7 @@ package com.wanderwildwood.dajiki.write
 
 import android.app.Application
 import android.net.Uri
+import android.text.format.DateFormat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.wanderwildwood.dajiki.R
@@ -15,11 +16,46 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.YearMonth
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
-/** A sheet and what was in it when it opened, handed over together so the page can key on it. */
-data class Opened(val sheet: Sheet, val text: String)
+/**
+ * A sheet and what was in it when it opened, handed over together so the page can key on it.
+ * [at] is where the cursor starts, for a sheet opened from a search; null is the end, where a
+ * sheet is almost always opened to carry on.
+ */
+data class Opened(val sheet: Sheet, val text: String, val at: Int? = null)
+
+/** The three ways of looking at the folder: its sheets newest first, a month of days, and a search. */
+enum class Showing { SHEETS, DAYS, SEARCH }
+
+/** A line found by a search, and the sheet it is in. */
+data class Hit(val sheet: Sheet, val found: Found)
+
+/**
+ * How the folder screen is being looked at, kept here rather than on the screen so it is
+ * where it was on the way back from a sheet: the same month, the same search.
+ */
+data class Looking(
+    val showing: Showing = Showing.SHEETS,
+    val month: YearMonth = YearMonth.now(),
+    /** The day picked on the calendar, whose sheets are listed beside it. */
+    val day: LocalDate = LocalDate.now(),
+    val query: String = "",
+    /** What [hits] were found for; behind [query] while a search is waiting or running. */
+    val searched: String = "",
+    val hits: List<Hit> = emptyList(),
+    val searching: Boolean = false,
+    /** More lines matched than are shown. */
+    val more: Boolean = false,
+)
 
 /**
  * How far along the folder is. Three states rather than two, because "no sheets yet" and
@@ -41,6 +77,7 @@ data class PageState(
     val sizePerSheet: Boolean = false,
     val wordCount: Boolean = true,
     val format: Format = Format.PLAIN,
+    val openToToday: Boolean = false,
     /** Something that went wrong, in words, shown until it is read and dismissed. */
     val trouble: String? = null,
 )
@@ -58,9 +95,13 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             sizePerSheet = preferences.sizePerSheet,
             wordCount = preferences.wordCount,
             format = preferences.format,
+            openToToday = preferences.openToToday,
         ),
     )
     val state: StateFlow<PageState> = _state.asStateFlow()
+
+    private val _looking = MutableStateFlow(Looking())
+    val looking: StateFlow<Looking> = _looking.asStateFlow()
 
     /**
      * What is on the page right now.
@@ -133,7 +174,17 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     private val pen = Mutex()
 
     init {
-        preferences.folder?.let { list(it) }
+        preferences.folder?.let { where ->
+            if (preferences.openToToday) {
+                // Straight to today's page rather than back to the sheet last left open.
+                viewModelScope.launch {
+                    listNow(where, reopen = false)
+                    if (state.value.reading == Reading.DONE) openToday()
+                }
+            } else {
+                list(where)
+            }
+        }
     }
 
     /**
@@ -166,16 +217,19 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { listNow(uri) }
     }
 
-    private suspend fun listNow(uri: Uri) {
+    private suspend fun listNow(uri: Uri, reopen: Boolean = true) {
         run {
             val sheets = runCatching { withContext(Dispatchers.IO) { folder.list(uri) } }
             sheets.onSuccess { found ->
                 _state.update { it.copy(sheets = found, reading = Reading.DONE) }
                 // Back to whatever was being written when the app was last put down.
                 val last = preferences.lastOpen
-                if (last != null && state.value.opened == null) {
-                    found.firstOrNull { it.uri == last }?.let(::open)
+                if (reopen && last != null && state.value.opened == null) {
+                    found.firstOrNull { it.uri == last }?.let { open(it) }
                 }
+                // A search left open is answered again from the folder as it is now: the
+                // sheet just closed may have gained or lost the very line it found.
+                looking.value.query.takeIf { it.isNotBlank() }?.let { search(it, again = true) }
             }.onFailure { reason ->
                 _state.update { it.copy(reading = Reading.FAILED) }
                 // The grant can be gone: the folder may have been deleted, or its provider
@@ -186,7 +240,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun open(sheet: Sheet) {
+    fun open(sheet: Sheet, at: Int? = null) {
         saveNow()
         val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
@@ -211,7 +265,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                     preferences.lastOpen = sheet.uri
                     _state.update {
                         it.copy(
-                            opened = Opened(sheet, text),
+                            opened = Opened(sheet, text, at?.coerceIn(0, text.length)),
                             unsaved = false,
                             size = sizeOpening(sheet.uri),
                         )
@@ -219,6 +273,143 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 .onFailure { say(getApplication<Application>().getString(R.string.trouble_open_failed, sheet.name), it) }
         }
+    }
+
+    /**
+     * Today's page: the sheet named for today's date alone, made if there is none yet.
+     *
+     * The folder is read again first rather than trusted from the list on screen, so a page a
+     * laptop made this morning is found rather than a second one started beside it. Opened
+     * again later in the day, it gains a line with the time under what is there; nothing is
+     * written until something is typed, so looking at the page changes nothing.
+     */
+    fun openToday() {
+        val where = state.value.folder ?: return
+        val today = LocalDate.now()
+        val current = state.value.opened?.sheet
+        if (current != null && isPageFor(current.name, today)) return
+        saveNow()
+        val abandoned = untouched(current, pending)
+        val format = state.value.format
+
+        viewModelScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val found = folder.list(where)
+                    val name = pageFor(found.map { it.name }, today, format)
+                    val existing = found.firstOrNull { it.name == name }
+                    if (existing != null) {
+                        // Stamped before the read, for the reason open() is.
+                        val stamp = folder.stamp(existing.uri)
+                        Today(existing, stamp, folder.read(existing.uri), found, made = false)
+                    } else {
+                        val made = folder.create(where, format, dayName(today))
+                        Today(made, folder.stamp(made.uri), "", listOf(made) + found, made = true)
+                    }
+                }
+            }
+                .onSuccess { page ->
+                    val since = page.stamp?.modified?.takeIf { it > 0L }
+                        ?.let { (System.currentTimeMillis() - it) / 60_000L }
+                    val shown = pageReopened(page.text, clock(), since)
+                    fresh = if (page.made) page.sheet.uri else null
+                    pending = shown
+                    seen = page.stamp
+                    // What is on disk, not what is shown: the time line is not in the file
+                    // until something is typed under it.
+                    written = page.text
+                    stalled = false
+                    leaving = false
+                    preferences.lastOpen = page.sheet.uri
+                    _state.update {
+                        it.copy(
+                            opened = Opened(page.sheet, shown),
+                            sheets = page.found,
+                            reading = Reading.DONE,
+                            unsaved = false,
+                            size = sizeOpening(page.sheet.uri),
+                        )
+                    }
+                    if (abandoned != null && abandoned.uri != page.sheet.uri) discard(abandoned)
+                }
+                .onFailure { say(getApplication<Application>().getString(R.string.trouble_today_failed), it) }
+        }
+    }
+
+    private class Today(val sheet: Sheet, val stamp: Stamp?, val text: String, val found: List<Sheet>, val made: Boolean)
+
+    /** The time now, the way the phone's own clock shows it: 21:40, or 9:40 PM. */
+    private fun clock(): String {
+        val pattern = if (DateFormat.is24HourFormat(getApplication())) "HH:mm" else "h:mm a"
+        return SimpleDateFormat(pattern, Locale.getDefault()).format(Date())
+    }
+
+    fun show(showing: Showing) = _looking.update { it.copy(showing = showing) }
+
+    fun stepMonth(by: Long) = _looking.update { it.copy(month = it.month.plusMonths(by)) }
+
+    fun pickDay(day: LocalDate) = _looking.update { it.copy(day = day) }
+
+    /** Back to this month, with today picked. */
+    fun thisMonth() = _looking.update { it.copy(month = YearMonth.now(), day = LocalDate.now()) }
+
+    /** The search under way, cancelled by the next keystroke; the pause before it is the same idea as the save's. */
+    private var hunt: Job? = null
+
+    /**
+     * What each sheet said when it was last read for a search, against the time it was
+     * written, so a second search over the same folder reads only what has changed since.
+     */
+    private val readForSearch = ConcurrentHashMap<Uri, Pair<Long, String>>()
+
+    /**
+     * Look for [query] in every sheet in the folder, once the typing has paused.
+     *
+     * The files are read off the main thread, newest sheet first, and the search gives way the
+     * moment another key is pressed. [again] runs it even though the query has not changed,
+     * for when the folder has.
+     */
+    fun search(query: String, again: Boolean = false) {
+        if (!again && query == looking.value.query) return
+        _looking.update { it.copy(query = query) }
+        hunt?.cancel()
+        if (query.isBlank()) {
+            _looking.update { it.copy(searched = "", hits = emptyList(), searching = false, more = false) }
+            return
+        }
+        hunt = viewModelScope.launch {
+            delay(if (again) 0L else SEARCH_PAUSE)
+            _looking.update { it.copy(searching = true) }
+            val (hits, more) = withContext(Dispatchers.IO) {
+                // The folder as it is now rather than as it was last listed: a sync app may
+                // have brought in a sheet while the app was open, and a search that cannot
+                // find what is plainly in the folder is a search nobody trusts again.
+                val sheets = state.value.folder
+                    ?.let { where -> runCatching { folder.list(where) }.getOrNull() }
+                    ?.also { found -> _state.update { it.copy(sheets = found) } }
+                    ?: state.value.sheets
+                val hits = mutableListOf<Hit>()
+                for (sheet in sheets) {
+                    ensureActive()
+                    val text = textForSearch(sheet) ?: continue
+                    for (found in findIn(text, query)) {
+                        if (hits.size == MAX_HITS) return@withContext hits to true
+                        hits += Hit(sheet, found)
+                    }
+                }
+                hits to false
+            }
+            _looking.update { it.copy(searched = query, hits = hits, searching = false, more = more) }
+        }
+    }
+
+    private fun textForSearch(sheet: Sheet): String? {
+        val kept = readForSearch[sheet.uri]
+        if (kept != null && sheet.modified > 0L && kept.first == sheet.modified) return kept.second
+        // A sheet that will not open is left out of the results rather than stopping them.
+        val text = runCatching { folder.read(sheet.uri) }.getOrNull() ?: return null
+        readForSearch[sheet.uri] = sheet.modified to text
+        return text
     }
 
     fun newSheet() {
@@ -567,6 +758,12 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun toggleOpenToToday() {
+        val wanted = !state.value.openToToday
+        preferences.openToToday = wanted
+        _state.update { it.copy(openToToday = wanted) }
+    }
+
     fun toggleWordCount() {
         val wanted = !state.value.wordCount
         preferences.wordCount = wanted
@@ -654,5 +851,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
     private companion object {
         const val PAUSE = 2_000L
+
+        /** Between the last key in the search field and the search: one repaint of results, not one per letter. */
+        const val SEARCH_PAUSE = 500L
+
+        /** Enough to read on a phone; a word that turns up more often than this wants a longer search. */
+        const val MAX_HITS = 200
     }
 }

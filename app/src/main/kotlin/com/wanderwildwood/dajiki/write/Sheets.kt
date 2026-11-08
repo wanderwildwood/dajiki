@@ -273,8 +273,12 @@ class Folder(context: Context) {
      * changed it anyway. Markdown in a `.txt` is still markdown, and a `.md` put in the folder
      * from elsewhere opens here perfectly well whichever is set.
      */
-    fun create(folder: Uri, format: Format): Sheet {
-        val stamp = SimpleDateFormat("yyyy-MM-dd HHmm", Locale.ROOT).format(Date())
+    fun create(
+        folder: Uri,
+        format: Format,
+        // Today's page passes its own name, the date alone; everything else is named for the minute.
+        stamp: String = SimpleDateFormat("yyyy-MM-dd HHmm", Locale.ROOT).format(Date()),
+    ): Sheet {
         val parent = DocumentsContract.buildDocumentUriUsingTree(
             folder,
             DocumentsContract.getTreeDocumentId(folder),

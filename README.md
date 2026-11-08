@@ -5,6 +5,8 @@ keyboard plugged into it. Built for the [Mudita Kompakt](https://mudita.com/prod
 and it will install on any Android 12 device.
 It keeps your writing as ordinary text files in a folder you choose, never writes over a sheet
 that changed somewhere else, asks for no permissions, and has no network access.
+It keeps a diary as well: a page for each day, a month of the days you wrote on, and a search
+through every sheet.
 
 *Dajiki* is 打字機 — the character-striking machine. Nobody has said it in Japanese since the
 war; タイプライター is the live word. The old one is here on purpose, for a machine that does
@@ -16,11 +18,10 @@ already ships with.
 
 | | |
 |---|---|
-| ![The page, and nothing else](screenshots/1-page.png) | ![A folder of sheets](screenshots/2-files.png) |
-| ![What there is to set](screenshots/3-settings.png) | ![Where the writing lives](screenshots/4-about.png) |
+| ![Today's page, with a line for each later sitting](screenshots/1-page.png) | ![A folder of sheets](screenshots/2-files.png) |
+| ![The days you wrote on](screenshots/3-days.png) | ![A search through every sheet](screenshots/4-search.png) |
 
-*Turned a quarter, because the screen is landscape and this page is not. Tilt your head to
-the right.*
+*Held upright, which Settings allows. Out of the box it opens in landscape.*
 
 ## Why it exists
 
@@ -38,16 +39,29 @@ line needed to be attached to.
 
 ## What it does
 
-- **Opens in landscape and stays there**, with nothing in the background holding it. Turned
-  around, or following the device, if a keyboard case wants it the other way up. None of the
-  three needs an accelerometer, which several of these panels do not have.
+- **Opens in landscape and stays there**, with nothing in the background holding it. Settings
+  turns it around for a keyboard case that wants it the other way up, or holds it upright for
+  writing with the thumbs and reading back. None of those three needs an accelerometer, which
+  several of these panels do not have. A fourth choice turns the screen with the phone, by
+  reading the accelerometer itself, since the Kompakt's own auto-rotate is off for good.
+- **Today's page.** The first row of the folder opens a sheet named for the date alone,
+  `2026-11-08.txt`, and makes it if it is not there yet. Come back to it later in the day and
+  a line with the time, `— 9:40 PM`, waits under what is there for the new writing; nothing is
+  written to the file until you type. Settings can open the app straight onto it. Ordinary
+  sheets are untouched by any of this and still named for the minute they were started.
+- **By day.** A month calendar of the folder, with a dot under every day that has writing,
+  going by the date a sheet's name starts with, or the day it was last written when the name
+  has none. Tap a day to open its sheet, or to choose between several. ‹ and › step the months.
+- **Search.** Every sheet in the folder, searched as plain text in any case. Each matching
+  line is a row with its sheet's name; tapping it opens the sheet with the cursor at the word.
 - **Keeps your writing as ordinary text files in a folder you choose**, through the system
   picker — so it can be a folder a sync app already owns, and the files are still there if
   this app is uninstalled. No storage permission is asked for, because that grant is not a
   permission. New sheets are `.txt`, or `.md` if Settings says so — the same plain text
   under either name, for a folder that Memo or a laptop's markdown tools also read. A
   `.md` put in the folder from elsewhere opens whichever is set.
-- **Ctrl-S, Ctrl-N, Ctrl-O and Escape**, and **Ctrl-Z to take back what you just typed**.
+- **Ctrl-S, Ctrl-N, Ctrl-O, Ctrl-T (today's page) and Escape**, and **Ctrl-Z to take back
+  what you just typed**.
   Everything else a keyboard does — Home, End, page keys, shift to select, word-wise arrows —
   is the platform's text field doing what it already does correctly, untouched.
 - **A way to the keyboard layout.** The Kompakt reads every Bluetooth keyboard as US QWERTY,
@@ -87,8 +101,8 @@ not merge two versions of a sheet either — it keeps both and says so.
 
 ## Where this is up to
 
-Version 0.1.5. The word count, the change-detection rules and the size a page opens at are
-unit tested, every screen
+Version 0.1.36. The word count, the change-detection rules, the size a page opens at, and the
+diary's dates, time lines and search are unit tested, every screen
 has been driven on a device, and the save path has been checked against the things that
 actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
 sheet that changed underneath the app is copied rather than overwritten.

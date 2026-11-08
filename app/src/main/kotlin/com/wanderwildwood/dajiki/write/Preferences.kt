@@ -9,15 +9,18 @@ import android.net.Uri
  *
  * ACROSS is what the manifest already declares, and is the reason the app exists. AROUND is
  * the same thing rotated half a turn, for a keyboard case that puts the hinge on the other
- * side. DEVICE hands the decision back, for reading rather than writing.
+ * side. UPRIGHT is the phone held the ordinary way, for writing with the thumbs or reading
+ * back a diary in the hand. DEVICE turns with the phone.
  *
- * None of these needs a sensor. A panel with no accelerometer in it — which several of these
- * devices are — still honours all three, where anything sensor-driven would pick one at random
- * and stay there.
+ * The first three need no sensor and are honoured on every panel, including the ones with no
+ * accelerometer in them. DEVICE watches the accelerometer itself ([com.wanderwildwood.dajiki.TurnWithPhone]),
+ * because the Kompakt's own auto-rotate is off for good and asking the system to follow the
+ * sensor turns nothing there; on a phone with no accelerometer it simply stays as it was.
  */
 enum class Turn(val activityInfo: Int) {
     ACROSS(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE),
     AROUND(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE),
+    UPRIGHT(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT),
     DEVICE(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED),
 }
 
@@ -57,7 +60,7 @@ inline fun <reified T : Enum<T>> next(current: T): T {
     return all[(current.ordinal + 1) % all.size]
 }
 
-/** The three things there are to set, and the folder the reader chose once. */
+/** What there is to set, and the folder the reader chose once. */
 class Preferences(context: Context) {
 
     private val store = context.getSharedPreferences("dajiki", Context.MODE_PRIVATE)
@@ -145,6 +148,14 @@ class Preferences(context: Context) {
         get() = store.getBoolean(WORD_COUNT, true)
         set(value) = store.edit().putBoolean(WORD_COUNT, value).apply()
 
+    /**
+     * Whether the app opens on today's page rather than on the sheet last left open. Off by
+     * default: the app is a typewriter first, and a diary only for those who ask it to be.
+     */
+    var openToToday: Boolean
+        get() = store.getBoolean(OPEN_TO_TODAY, false)
+        set(value) = store.edit().putBoolean(OPEN_TO_TODAY, value).apply()
+
     /** The sheet that was open when the app was last put down, so it opens there again. */
     var lastOpen: Uri?
         get() = store.getString(LAST_OPEN, null)?.let(Uri::parse)
@@ -159,5 +170,6 @@ class Preferences(context: Context) {
         const val SIZE_OF = "size_of:"
         const val WORD_COUNT = "word_count"
         const val LAST_OPEN = "last_open"
+        const val OPEN_TO_TODAY = "open_to_today"
     }
 }

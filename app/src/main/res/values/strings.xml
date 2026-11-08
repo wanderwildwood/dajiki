@@ -12,6 +12,12 @@
     <string name="files_no_folder_body">Your writing stays there as ordinary text files, which any other app on the phone can open. Nothing is kept inside this one.</string>
     <!-- Button that opens the system folder picker -->
     <string name="files_choose_folder">Choose a folder</string>
+    <!-- The three tabs of the folder screen: the list of files, a month calendar of them, a search through them -->
+    <string name="files_tab_sheets">Sheets</string>
+    <string name="files_tab_days">By day</string>
+    <string name="files_tab_search">Search</string>
+    <!-- The first row of the list: opens the file named for today's date, making it if need be. Under it, today's date -->
+    <string name="files_today">Today\'s page</string>
     <!-- The row at the top of the list that starts a new, empty text file ("sheet" = a sheet of paper) -->
     <string name="files_new_sheet">New sheet</string>
     <!-- Shown in place of the list while the folder is still being read -->
@@ -26,6 +32,35 @@
     <string name="files_not_dated">Not dated</string>
     <!-- Under a sheet's name, when it was written to less than a minute ago -->
     <string name="files_just_now">Just now</string>
+
+    <!-- ============================================================ -->
+    <!-- By day: a month calendar of the folder -->
+
+    <!-- Screen-reader descriptions of the ‹ and › buttons that step the calendar a month -->
+    <string name="days_cd_earlier">Month before</string>
+    <string name="days_cd_later">Month after</string>
+    <!-- Screen reader, after a day's date when something was written that day -->
+    <string name="days_cd_written">written</string>
+    <!-- Under today's date when today has no page yet -->
+    <string name="days_start_today">Start today\'s page</string>
+    <string name="days_nothing">Nothing written this day.</string>
+    <!-- Under a file name: %1$s is a short date, %2$s a time -->
+    <string name="days_last_written">Last written %1$s, %2$s</string>
+
+    <!-- ============================================================ -->
+    <!-- Search: every file in the folder -->
+
+    <string name="search_hint">Search all sheets</string>
+    <string name="search_empty">Every sheet in the folder is searched, in any case.</string>
+    <string name="search_searching">Searching…</string>
+    <!-- %1$s is what was searched for -->
+    <string name="search_none">No sheet has “%1$s”.</string>
+    <!-- When there are more matching lines than are shown; %1$d is how many are shown -->
+    <string name="search_more">The first %1$d lines</string>
+    <plurals name="search_lines">
+        <item quantity="one">%d line</item>
+        <item quantity="other">%d lines</item>
+    </plurals>
 
     <!-- ============================================================ -->
     <!-- The page: the line at the foot of the writing surface -->
@@ -67,8 +102,12 @@
     <string name="settings_turn_across">Across</string>
     <!-- Landscape, upside down -->
     <string name="settings_turn_around">Across, turned around</string>
-    <!-- Follows the device's rotation -->
-    <string name="settings_turn_device">However the device is held</string>
+    <!-- Portrait -->
+    <string name="settings_turn_upright">Upright</string>
+    <!-- Follows the phone's rotation, read from its motion sensor -->
+    <string name="settings_turn_device">Turns with the phone</string>
+    <!-- On: the app opens on the file for today's date instead of the file last left open -->
+    <string name="settings_open_to_today">Open to today\'s page</string>
     <string name="settings_word_count">Count the words</string>
     <string name="settings_word_count_note">Counted as runs between spaces, so it is wrong for a language that does not use them.</string>
     <string name="settings_text_size">Text size</string>
@@ -89,7 +128,7 @@
 
     <!-- %1$s is the version number -->
     <string name="about_title">Typewriter %1$s</string>
-    <string name="about_body">A text editor that opens in landscape and stays there, for writing with a keyboard connected to the phone. What you write is ordinary text files in a folder you choose, which any other app can open.</string>
+    <string name="about_body">A text editor for writing with a keyboard connected to the phone, in landscape unless you turn it in Settings. It keeps a diary too: a page for each day, a month of the days you wrote on, and a search through every sheet. What you write is ordinary text files in a folder you choose, which any other app can open.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy">Everything you write stays on this phone. The app has no internet access, so nothing is sent anywhere, and nothing is collected about you.</string>
     <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. Your sheets stay in that folder if this app is uninstalled. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. Backups and exports go only where you choose to save them.</string>
@@ -115,6 +154,7 @@
     <!-- %1$s is the file name -->
     <string name="trouble_open_failed">%1$s could not be opened.</string>
     <string name="trouble_new_failed">A new sheet could not be started in that folder.</string>
+    <string name="trouble_today_failed">Today\'s page could not be opened in that folder.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_save_failed">%1$s could not be saved. What you typed is still here.</string>
     <!-- %1$s is the file that changed elsewhere, %2$s the new file that now holds what was typed here; the reader is still on that new sheet -->

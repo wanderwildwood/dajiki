@@ -1,6 +1,7 @@
 package com.wanderwildwood.dajiki
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -32,6 +33,8 @@ import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.wanderwildwood.dajiki.ui.EInkDialog
 import com.wanderwildwood.dajiki.ui.FilesScreen
+import com.wanderwildwood.dajiki.ui.FolderActions
+import com.wanderwildwood.dajiki.write.Turn
 import com.wanderwildwood.dajiki.ui.PageScreen
 import com.wanderwildwood.dajiki.ui.SettingsScreen
 import com.wanderwildwood.dajiki.ui.houseTypography
@@ -40,6 +43,43 @@ import com.wanderwildwood.dajiki.write.PageViewModel
 import com.wanderwildwood.dajiki.ui.ArmedScope
 
 class MainActivity : ComponentActivity() {
+    private val turner = TurnWithPhone(this)
+    private var turning = false
+
+    /**
+     * Hold the screen the way the reader chose. Three of the four are an orientation asked for
+     * by name, which every panel honours with or without a sensor. "Turns with the phone"
+     * watches the accelerometer itself, starting from the way the screen is now so that a
+     * phone lying on a desk stays as it was.
+     */
+    fun turn(turn: Turn) {
+        if (turn == Turn.DEVICE) {
+            TurnWithPhone.shown = when {
+                resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE -> TurnWithPhone.PORTRAIT
+                requestedOrientation == TurnWithPhone.REVERSE_LANDSCAPE -> TurnWithPhone.REVERSE_LANDSCAPE
+                else -> TurnWithPhone.LANDSCAPE
+            }
+            turner.set(on = true)
+            turning = true
+        } else {
+            // Stopped by holding the screen where it is rather than by switching off, which
+            // asks for portrait on the way and would turn the panel twice.
+            if (turning) turner.set(on = true, held = true)
+            turning = false
+            requestedOrientation = turn.activityInfo
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        turner.resume()
+    }
+
+    override fun onPause() {
+        turner.pause()
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -56,10 +96,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun Typewriter(
-    activity: ComponentActivity,
+    activity: MainActivity,
     viewModel: PageViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val looking by viewModel.looking.collectAsStateWithLifecycle()
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
 
     /*
@@ -69,7 +110,7 @@ private fun Typewriter(
      * activity comes back with after the system has restarted it.
      */
     LaunchedEffect(state.turn) {
-        activity.requestedOrientation = state.turn.activityInfo
+        activity.turn(state.turn)
     }
 
     /*
@@ -124,6 +165,7 @@ private fun Typewriter(
             onClose = { settingsOpen = false },
             onChooseFolder = { choose.launch(state.folder) },
             onTurn = viewModel::setTurn,
+            onOpenToToday = viewModel::toggleOpenToToday,
             onSize = viewModel::setSize,
             onSizePerSheet = viewModel::toggleSizePerSheet,
             onWordCount = viewModel::toggleWordCount,
@@ -138,6 +180,7 @@ private fun Typewriter(
             onEdited = viewModel::edited,
             onSaveNow = viewModel::saveNow,
             onNew = viewModel::newSheet,
+            onToday = viewModel::openToday,
             onFiles = viewModel::close,
             onRename = viewModel::renameOpen,
             onSize = viewModel::setSizeHere,
@@ -145,11 +188,20 @@ private fun Typewriter(
 
         else -> FilesScreen(
             state = state,
-            onChooseFolder = { choose.launch(state.folder) },
-            onOpen = viewModel::open,
-            onNew = viewModel::newSheet,
-            onDelete = viewModel::deleteSheet,
-            onSettings = { settingsOpen = true },
+            looking = looking,
+            act = FolderActions(
+                chooseFolder = { choose.launch(state.folder) },
+                open = viewModel::open,
+                newSheet = viewModel::newSheet,
+                today = viewModel::openToday,
+                delete = viewModel::deleteSheet,
+                settings = { settingsOpen = true },
+                show = viewModel::show,
+                stepMonth = viewModel::stepMonth,
+                pickDay = viewModel::pickDay,
+                thisMonth = viewModel::thisMonth,
+                search = { viewModel.search(it) },
+            ),
         )
     }
 
