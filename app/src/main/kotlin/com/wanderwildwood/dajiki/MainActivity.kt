@@ -3,6 +3,7 @@ package com.wanderwildwood.dajiki
 import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -75,6 +76,27 @@ class MainActivity : ComponentActivity() {
             turning = false
             requestedOrientation = turn.activityInfo
         }
+    }
+
+    /** The way the screen was held before [uprightForLock] turned it, or null when it has not. */
+    private var beforeLock: Int? = null
+
+    /**
+     * Turn the screen upright while Android asks for the phone's lock. Held sideways, the
+     * phone's keyboard takes the whole screen over Android's PIN box (landscape "extract" mode):
+     * no title, no box to tap out of, only Back, which is easy to miss on a Kompakt (found
+     * 8 Nov). Upright, the keyboard sits below the title and the PIN box,
+     * and a tap above them cancels, as anywhere else on the phone.
+     */
+    fun uprightForLock() {
+        if (beforeLock == null) beforeLock = requestedOrientation
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+
+    /** Put the screen back the way it was held before [uprightForLock]. */
+    fun backFromLock() {
+        beforeLock?.let { requestedOrientation = it }
+        beforeLock = null
     }
 
     override fun onResume() {
@@ -187,6 +209,7 @@ private fun Typewriter(
      * to ask for, and Android says so by handing back no screen at all.
      */
     val confirm = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        activity.backFromLock()
         viewModel.unlockAnswered(if (result.resultCode == Activity.RESULT_OK) Unlock.DONE else Unlock.CANCELLED)
     }
     LaunchedEffect(state.asking) {
@@ -197,7 +220,11 @@ private fun Typewriter(
         if (ask == null) {
             viewModel.unlockAnswered(Unlock.NO_SCREEN_LOCK)
         } else {
-            runCatching { confirm.launch(ask) }.onFailure { viewModel.unlockAnswered(Unlock.CANCELLED) }
+            activity.uprightForLock()
+            runCatching { confirm.launch(ask) }.onFailure {
+                activity.backFromLock()
+                viewModel.unlockAnswered(Unlock.CANCELLED)
+            }
         }
     }
 
