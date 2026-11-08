@@ -45,6 +45,38 @@ fun changedBetween(before: Stamp, now: Stamp): Boolean? = when {
 fun vanished(before: Stamp?, now: Stamp?): Boolean = before != null && now == null
 
 /**
+ * Whether a file in the folder is something this app should offer to open.
+ *
+ * The extension catches a sheet a sync app has put there with no type on it at all, which is
+ * common; the type catches one whose name carries no extension, which is what several
+ * providers do. The third case is a name with no extension that starts with a date: this
+ * app's own sheets, made before 0.1.37 by a provider that neither put `.txt` on the name nor
+ * typed the file as text (Cabinet's folder picker does neither), and so dropped from the list
+ * although they were sitting in the folder.
+ */
+fun isWriting(name: String, mime: String?): Boolean {
+    if (mime == DIR_MIME) return false
+    val lower = name.lowercase(Locale.ROOT)
+    val known = lower.endsWith(".txt") || lower.endsWith(".md") ||
+        lower.endsWith(".markdown") || lower.endsWith(".text")
+    if (known || mime?.startsWith("text/") == true) return true
+    return '.' !in name && dayInName(name) != null
+}
+
+/**
+ * The name a new sheet should end up with, given what the provider called it ([got]), or null
+ * where [got] already ends in `.extension`. A provider is asked for the full name, and some
+ * still drop or swap the end of it; the provider's own "(1)" for a name already taken stays.
+ */
+fun withExtension(got: String, extension: String): String? {
+    if (got.lowercase(Locale.ROOT).endsWith(".$extension")) return null
+    return "$got.$extension"
+}
+
+/** [DocumentsContract.Document.MIME_TYPE_DIR], spelled out so the rules above need no Android. */
+private const val DIR_MIME = "vnd.android.document/directory"
+
+/**
  * What to call the copy holding what was typed here, when the sheet itself has moved on.
  *
  * The extension is kept where there is one, so a `.md` that came from a laptop forks to a
@@ -105,21 +137,6 @@ class Folder(context: Context) {
             }
         }
         return sheets.sortedByDescending { it.modified }
-    }
-
-    /**
-     * Whether a file in the folder is something this app should offer to open.
-     *
-     * Both halves are needed. The extension catches a sheet a sync app has put there with no
-     * type on it at all, which is common; the type catches one whose name carries no
-     * extension, which is what several providers do.
-     */
-    private fun isWriting(name: String, mime: String?): Boolean {
-        if (mime == DocumentsContract.Document.MIME_TYPE_DIR) return false
-        val lower = name.lowercase(Locale.ROOT)
-        val known = lower.endsWith(".txt") || lower.endsWith(".md") ||
-            lower.endsWith(".markdown") || lower.endsWith(".text")
-        return known || mime?.startsWith("text/") == true
     }
 
     /**
@@ -265,8 +282,8 @@ class Folder(context: Context) {
      * writing is the wrong thing to put there — particularly on a panel where a dialog costs
      * two full repaints. The date sorts, and a sheet can be renamed from any file manager.
      *
-     * Plain text asks the provider for `text/plain` and lets it put the `.txt` on. Markdown
-     * cannot be asked for that way: a name ending `.md` against a plain-text type is how
+     * Plain text asks the provider for `text/plain` under the full name, `.txt` and all, and
+     * puts the `.txt` back on if the provider left it off. Markdown cannot be asked for that way: a name ending `.md` against a plain-text type is how
      * files called `notes.md.txt` happen, and Android's own storage does not count `.md` as
      * belonging to any text type it knows. So a `.md` is asked for by its full name against
      * no type at all, the way Notes makes its own, and the name is put back if the provider
@@ -285,8 +302,18 @@ class Folder(context: Context) {
         )
         var uri: Uri
         if (format == Format.PLAIN) {
-            uri = DocumentsContract.createDocument(resolver, parent, "text/plain", stamp)
+            // Asked for by its full name. Android's own storage keeps a `.txt` it is given
+            // against `text/plain` and adds one only where the name lacks it, but not every
+            // provider adds one: Cabinet's folder picker makes the file under exactly the name
+            // it is handed, so a bare date came out as a file with no extension and no text
+            // type, which the list then passed over (t/16264).
+            uri = DocumentsContract.createDocument(resolver, parent, "text/plain", "$stamp.${format.extension}")
                 ?: error("The folder would not take a new sheet.")
+            val got = nameOf(uri)
+            val fixed = got?.let { withExtension(it, format.extension) }
+            if (fixed != null) {
+                uri = runCatching { DocumentsContract.renameDocument(resolver, uri, fixed) }.getOrNull() ?: uri
+            }
         } else {
             val wanted = "$stamp.${format.extension}"
             uri = DocumentsContract.createDocument(resolver, parent, "application/octet-stream", wanted)
