@@ -97,13 +97,13 @@
     <!-- The folder setting's value when none has been chosen -->
     <string name="settings_folder_none">None chosen</string>
     <!-- Which way the screen is held -->
-    <string name="settings_turn">Which way round</string>
+    <string name="settings_turn">Orientation</string>
     <!-- Landscape -->
-    <string name="settings_turn_across">Across</string>
+    <string name="settings_turn_across">Landscape</string>
     <!-- Landscape, upside down -->
-    <string name="settings_turn_around">Across, turned around</string>
+    <string name="settings_turn_around">Landscape, upside down</string>
     <!-- Portrait -->
-    <string name="settings_turn_upright">Upright</string>
+    <string name="settings_turn_upright">Portrait</string>
     <!-- Follows the phone's rotation, read from its motion sensor -->
     <string name="settings_turn_device">Turns with the phone</string>
     <!-- On: the app opens on the file for today's date instead of the file last left open -->
