@@ -170,6 +170,14 @@ fun SettingsScreen(
                 )
             }
             item {
+                Toggle(
+                    title = stringResource(R.string.settings_dark),
+                    note = stringResource(R.string.settings_dark_note),
+                    checked = DarkMode.on,
+                    onClick = { DarkMode.set(context, !DarkMode.on) },
+                )
+            }
+            item {
                 // Asked for from the forum: a folder that Notes also reads wants `.md`.
                 // Only the name changes; the page writes the same plain text either way.
                 Setting(
