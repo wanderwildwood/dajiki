@@ -29,6 +29,12 @@ In that folder, as the plain text files you can see there. Not in a database ins
 not in a cache, and not in a copy anywhere else. Uninstalling this app does not take them
 with it.
 
+## No backups
+
+The app makes no backups and has no export. It is also left out of Android's own backups
+(`allowBackup="false"` in the manifest), so what it keeps for itself (its settings) stays on the
+phone. Your sheets are already ordinary files in your folder: to keep a copy, copy the folder.
+
 ## The one address in the app
 
 The llama at the foot of the About opens `square.link/u/AGu8oT10` in whatever browser you
@@ -62,7 +68,7 @@ If you are in the EU, the EEA or the UK, the GDPR gives you the right to:
 
 Similar laws elsewhere, such as the CCPA in California, give you the right to know, delete and correct, and to opt out of the sale or sharing of your data. Nothing from Typewriter is sold or shared.
 
-Since Typewriter keeps what it stores only on your phone, you can exercise most of these rights yourself: delete a sheet in the app's Files list or its file in your folder, clear the app's data in Android's settings, or uninstall the app, which deletes what the app keeps (your sheets stay in their folder; see below). For anything you cannot do yourself, write to the address above.
+Since Typewriter keeps what it stores only on your phone, you can exercise most of these rights yourself: delete a sheet in the app's Sheets list or its file in your folder, clear the app's data in Android's settings, or uninstall the app, which deletes what the app keeps (your sheets stay in their folder; see below). For anything you cannot do yourself, write to the address above.
 <!-- /shared-about privacy section -->
 
 Your sheets are a different matter from the app's own data: they are plain files in the folder
