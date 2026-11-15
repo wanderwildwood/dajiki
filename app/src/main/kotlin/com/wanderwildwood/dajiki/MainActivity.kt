@@ -48,6 +48,7 @@ import com.wanderwildwood.dajiki.ui.PageScreen
 import com.wanderwildwood.dajiki.ui.SettingsScreen
 import com.wanderwildwood.dajiki.ui.houseTypography
 import com.wanderwildwood.dajiki.ui.monochrome
+import com.wanderwildwood.dajiki.ui.DarkSelection
 import com.wanderwildwood.dajiki.write.PageViewModel
 import com.wanderwildwood.dajiki.ui.ArmedScope
 
@@ -116,9 +117,9 @@ class MainActivity : ComponentActivity() {
             // A steady cursor: a blinking one is a repaint twice a second on an e-ink panel
             // for as long as a field has focus.
             CompositionLocalProvider(LocalCursorBlinkEnabled provides false) {
-                ThemeMMD(colorScheme = monochrome, typography = houseTypography) {
+                ThemeMMD(colorScheme = monochrome, typography = houseTypography) { DarkSelection {
                     ArmedScope { Typewriter(this) }
-                }
+                } }
             }
         }
     }
