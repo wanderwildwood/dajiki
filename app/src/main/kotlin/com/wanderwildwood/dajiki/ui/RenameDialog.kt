@@ -30,6 +30,8 @@ import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.text_field.TextFieldMMD
 import com.wanderwildwood.dajiki.R
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 /**
  * Give the sheet a name.
@@ -53,7 +55,7 @@ fun RenameDialog(name: String, onRename: (String) -> Unit, onDismiss: () -> Unit
         mutableStateOf(TextFieldValue(base, TextRange(base.length)))
     }
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
+    val keyboard = LocalSoftwareKeyboardController.current
 
     val commit = {
         onRename(value.text)
@@ -61,6 +63,14 @@ fun RenameDialog(name: String, onRename: (String) -> Unit, onDismiss: () -> Unit
     }
 
     EInkDialog(onDismiss = onDismiss) {
+        // Asked from inside the dialog, a frame after it is drawn: the field lives in the
+        // dialog's own window, which a request made from the screen beneath does not reach,
+        // so the name opened without the cursor in it or the keyboard up.
+        LaunchedEffect(Unit) {
+            withFrameNanos { }
+            runCatching { focus.requestFocus() }
+            keyboard?.show()
+        }
         TextMMD(
             text = stringResource(R.string.rename_title),
             style = MaterialTheme.typography.bodyLarge,
