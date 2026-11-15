@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -27,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import com.mudita.mmd.components.radio_button.RadioButtonMMD
 import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
@@ -44,7 +48,8 @@ import com.wanderwildwood.dajiki.write.Turn
  *
  * Each row says what it is set to, and a press moves it on to the next value. These do not
  * want a screen each, and a picker is two full repaints to choose between three things that
- * already fit on the row.
+ * already fit on the row. Orientation is the exception: each of its steps turns the whole
+ * screen, so it is picked from a list in one go.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +69,7 @@ fun SettingsScreen(
     // Saveable: turning the phone round to see how it looks must not leave Settings.
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
     var noLayoutPage by rememberSaveable { mutableStateOf(false) }
+    var turnOpen by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
@@ -103,7 +109,10 @@ fun SettingsScreen(
                         Turn.UPRIGHT -> stringResource(R.string.settings_turn_upright)
                         Turn.DEVICE -> stringResource(R.string.settings_turn_device)
                     },
-                    onClick = { onTurn(next(state.turn)) },
+                    // A list to pick from, not a press that moves it on: every step is a whole
+                    // turn of the screen, so going round four of them to reach one was up to
+                    // three full repaints and a screen upside down on the way.
+                    onClick = { turnOpen = true },
                 )
             }
             item {
@@ -226,6 +235,48 @@ fun SettingsScreen(
     }
 
     if (aboutOpen) AboutDialog(onDismiss = { aboutOpen = false })
+    if (turnOpen) {
+        TurnDialog(
+            chosen = state.turn,
+            onPick = { turn ->
+                turnOpen = false
+                if (turn != state.turn) onTurn(turn)
+            },
+            onDismiss = { turnOpen = false },
+        )
+    }
+}
+
+/** The four ways the screen can be held, to pick one from. Pressing a row picks it and closes. */
+@Composable
+private fun TurnDialog(chosen: Turn, onPick: (Turn) -> Unit, onDismiss: () -> Unit) {
+    val names = listOf(
+        Turn.UPRIGHT to stringResource(R.string.settings_turn_upright),
+        Turn.ACROSS to stringResource(R.string.settings_turn_across),
+        Turn.AROUND to stringResource(R.string.settings_turn_around),
+        Turn.DEVICE to stringResource(R.string.settings_turn_device),
+    )
+    EInkDialog(onDismiss = onDismiss) {
+        TextMMD(
+            text = stringResource(R.string.settings_turn),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(Modifier.height(8.dp))
+        for ((turn, name) in names) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clickable { onPick(turn) },
+            ) {
+                RadioButtonMMD(selected = turn == chosen, onClick = null)
+                Spacer(Modifier.width(8.dp))
+                TextMMD(text = name, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
 }
 
 /**

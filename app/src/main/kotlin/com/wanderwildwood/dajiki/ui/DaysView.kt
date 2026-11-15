@@ -83,6 +83,8 @@ internal fun DaysView(sheets: List<Sheet>, looking: Looking, act: FolderActions)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (maxWidth > maxHeight) {
             // Held across: the month on the left at the full height, the day's sheets beside it.
+            // The month is never so narrow that a day is under 48 dp across (a finger's width).
+            val monthWidth = maxOf(maxWidth * (1.15f / 2.15f), MONTH_START + DAY_LEAST * 7)
             Row(Modifier.fillMaxSize()) {
                 Month(
                     weeks = weeks,
@@ -92,7 +94,7 @@ internal fun DaysView(sheets: List<Sheet>, looking: Looking, act: FolderActions)
                     picked = looking.day,
                     small = true,
                     onDay = tap,
-                    modifier = Modifier.weight(1.15f).fillMaxHeight().padding(start = 12.dp, top = 4.dp, bottom = 6.dp),
+                    modifier = Modifier.width(monthWidth).fillMaxHeight().padding(start = MONTH_START, top = 4.dp, bottom = 6.dp),
                 )
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     MonthStep(looking.month, act)
@@ -192,7 +194,8 @@ private fun Month(
         for (week in weeks) {
             Row(Modifier.fillMaxWidth().weight(1f)) {
                 for (day in week) {
-                    Box(Modifier.weight(1f).fillMaxHeight().padding(1.dp)) {
+                    // No gap round the day: the whole cell takes the press.
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
                         if (day != null) {
                             Day(
                                 day = day,
@@ -232,9 +235,10 @@ private fun Day(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .then(if (today) Modifier.border(2.dp, ink, RoundedCornerShape(4.dp)) else Modifier)
             .clickable(onClick = onClick)
-            .semantics { contentDescription = said },
+            .semantics { contentDescription = said }
+            .padding(1.dp)
+            .then(if (today) Modifier.border(2.dp, ink, RoundedCornerShape(4.dp)) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -336,4 +340,10 @@ private fun format(skeleton: String, millis: Long): String {
 }
 
 private val WEEKDAY_ROW: Dp = 26.dp
+
+/** The least width of a day held across: 48 dp, the smallest target a finger finds. */
+private val DAY_LEAST: Dp = 48.dp
+
+/** The room left of the month held across. */
+private val MONTH_START: Dp = 12.dp
 private val DOT: Dp = 6.dp
