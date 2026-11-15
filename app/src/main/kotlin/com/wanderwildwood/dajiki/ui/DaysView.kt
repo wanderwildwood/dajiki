@@ -64,9 +64,19 @@ import java.util.Locale
  * them beside the month (below it, held upright) to choose from.
  *
  * Black on white and nothing that moves: the month changes in one repaint.
+ *
+ * Held across, the screen is too short for the bar across the top and six weeks of days each at
+ * least 48 dp tall, so the folder screen hands its [bar] (tabs and cog) down to sit at the top of
+ * the column beside the month, and the month takes the full height on the right. The tabs stay
+ * at the left edge where they are on the other two views.
  */
 @Composable
-internal fun DaysView(sheets: List<Sheet>, looking: Looking, act: FolderActions) {
+internal fun DaysView(
+    sheets: List<Sheet>,
+    looking: Looking,
+    act: FolderActions,
+    bar: (@Composable () -> Unit)? = null,
+) {
     val zone = remember { ZoneId.systemDefault() }
     val byDay = remember(sheets) {
         sheets.groupBy { dayOf(it.name, it.modified, zone) }
@@ -82,10 +92,17 @@ internal fun DaysView(sheets: List<Sheet>, looking: Looking, act: FolderActions)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (maxWidth > maxHeight) {
-            // Held across: the month on the left at the full height, the day's sheets beside it.
-            // The month is never so narrow that a day is under 48 dp across (a finger's width).
-            val monthWidth = maxOf(maxWidth * (1.15f / 2.15f), MONTH_START + DAY_LEAST * 7)
+            // Held across: the bar, the month step and the day's sheets on the left, the month on
+            // the right at the full height. The month is never so narrow that a day is under
+            // 48 dp across (a finger's width), and with the bar beside it rather than above, six
+            // weeks of days are each over 48 dp tall too.
+            val monthWidth = maxOf(maxWidth * (1.15f / 2.15f), MONTH_END + (DAY_LEAST + 0.5.dp) * 7)
             Row(Modifier.fillMaxSize()) {
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    bar?.invoke()
+                    MonthStep(looking.month, act)
+                    DaySheets(looking.day, byDay[looking.day].orEmpty(), today, act)
+                }
                 Month(
                     weeks = weeks,
                     firstDay = firstDay,
@@ -94,17 +111,14 @@ internal fun DaysView(sheets: List<Sheet>, looking: Looking, act: FolderActions)
                     picked = looking.day,
                     small = true,
                     onDay = tap,
-                    modifier = Modifier.width(monthWidth).fillMaxHeight().padding(start = MONTH_START, top = 4.dp, bottom = 6.dp),
+                    modifier = Modifier.width(monthWidth).fillMaxHeight().padding(end = MONTH_END, top = 4.dp, bottom = 6.dp),
                 )
-                Column(Modifier.weight(1f).fillMaxHeight()) {
-                    MonthStep(looking.month, act)
-                    DaySheets(looking.day, byDay[looking.day].orEmpty(), today, act)
-                }
             }
         } else {
             // Held upright: the month across the top, square-ish days, the day's sheets below.
             val rowHeight = minOf(maxWidth / 7, 52.dp)
             Column(Modifier.fillMaxSize()) {
+                bar?.invoke()
                 MonthStep(looking.month, act)
                 Month(
                     weeks = weeks,
@@ -153,7 +167,7 @@ private fun MonthStep(month: YearMonth, act: FolderActions) {
 private fun Step(mark: String, said: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(56.dp, 48.dp)
+            .size(48.dp)
             .clickable(onClick = onClick)
             .semantics { contentDescription = said },
         contentAlignment = Alignment.Center,
@@ -341,9 +355,12 @@ private fun format(skeleton: String, millis: Long): String {
 
 private val WEEKDAY_ROW: Dp = 26.dp
 
-/** The least width of a day held across: 48 dp, the smallest target a finger finds. */
+/**
+ * The least width of a day held across: 48 dp, the smallest target a finger finds (with half a
+ * dp each spare, so rounding to whole pixels never leaves a day a pixel short).
+ */
 private val DAY_LEAST: Dp = 48.dp
 
-/** The room left of the month held across. */
-private val MONTH_START: Dp = 12.dp
+/** The room right of the month held across. */
+private val MONTH_END: Dp = 12.dp
 private val DOT: Dp = 6.dp

@@ -90,6 +90,19 @@ fun FilesScreen(state: PageState, looking: Looking, act: FolderActions) {
         )
     }
     val cog: @Composable () -> Unit = { BarButton(Icons.Settings, stringResource(R.string.files_cd_settings), act.settings) }
+    val wideBar: @Composable () -> Unit = {
+        Column {
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+                tabs(Modifier.weight(1f), false)
+                cog()
+                Spacer(Modifier.width(8.dp))
+            }
+            HorizontalDividerMMD(thickness = 1.dp)
+        }
+    }
+    // Held across, By day needs the full height for six weeks of days at least 48 dp tall, so
+    // the bar moves down beside the month instead of across the top (see DaysView).
+    val barBesideMonth = wide && state.folder != null && looking.showing == Showing.DAYS
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -100,14 +113,9 @@ fun FilesScreen(state: PageState, looking: Looking, act: FolderActions) {
                     actions = { cog() },
                 )
 
-                wide -> Column {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
-                        tabs(Modifier.weight(1f), false)
-                        cog()
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    HorizontalDividerMMD(thickness = 1.dp)
-                }
+                barBesideMonth -> Unit
+
+                wide -> wideBar()
 
                 else -> Column {
                     TopAppBarMMD(
@@ -122,7 +130,7 @@ fun FilesScreen(state: PageState, looking: Looking, act: FolderActions) {
         Box(Modifier.fillMaxSize().padding(contentPadding)) {
             when {
                 state.folder == null -> NoFolder(act.chooseFolder)
-                looking.showing == Showing.DAYS -> DaysView(state.sheets, looking, act)
+                looking.showing == Showing.DAYS -> DaysView(state.sheets, looking, act, bar = if (barBesideMonth) wideBar else null)
                 looking.showing == Showing.SEARCH -> SearchView(looking, act)
                 else -> Sheets(sheetsTab(state.sheets, state.diaryFolder), state.reading, act)
             }
