@@ -158,7 +158,7 @@ private fun Step(mark: String, said: String, onClick: () -> Unit) {
             .semantics { contentDescription = said },
         contentAlignment = Alignment.Center,
     ) {
-        TextMMD(text = mark, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        TextMMD(text = mark, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
     }
 }
 
