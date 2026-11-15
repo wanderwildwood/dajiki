@@ -1,5 +1,6 @@
 package com.wanderwildwood.dajiki.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
@@ -64,7 +67,6 @@ fun RenameDialog(name: String, onRename: (String) -> Unit, onDismiss: () -> Unit
             fontWeight = FontWeight.Medium,
         )
 
-        Spacer(Modifier.height(14.dp))
         // The keyboard's own key finishes this, not just the button.
         //
         // Held across, an on-screen keyboard takes most of a 480 tall panel, and it pushed
@@ -73,28 +75,47 @@ fun RenameDialog(name: String, onRename: (String) -> Unit, onDismiss: () -> Unit
         // A writerdeck has a real keyboard and never sees this, but the phone it is a fork
         // of does, every time. Done also means Enter finishes it on a hardware keyboard,
         // which is what a typist's hands will do anyway.
-        TextFieldMMD(
-            value = value,
-            onValueChange = { value = it },
-            modifier = Modifier.fillMaxWidth().focusRequester(focus),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { commit() }),
-        )
+        val field: @Composable (Modifier) -> Unit = { modifier ->
+            TextFieldMMD(
+                value = value,
+                onValueChange = { value = it },
+                modifier = modifier.focusRequester(focus),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { commit() }),
+            )
+        }
+        val cancel: @Composable (Modifier) -> Unit = { modifier ->
+            OutlinedButtonMMD(onClick = onDismiss, modifier = modifier.height(48.dp)) {
+                TextMMD(text = stringResource(R.string.rename_cancel), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        val rename: @Composable (Modifier) -> Unit = { modifier ->
+            OutlinedButtonMMD(onClick = commit, modifier = modifier.height(48.dp)) {
+                TextMMD(text = stringResource(R.string.rename_confirm), style = MaterialTheme.typography.bodySmall)
+            }
+        }
 
-        Spacer(Modifier.height(18.dp))
-        Row(Modifier.fillMaxWidth()) {
-            OutlinedButtonMMD(
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f).height(48.dp),
-            ) { TextMMD(text = stringResource(R.string.rename_cancel), style = MaterialTheme.typography.bodySmall) }
-
-            Spacer(Modifier.width(10.dp))
-
-            OutlinedButtonMMD(
-                onClick = commit,
-                modifier = Modifier.weight(1f).height(48.dp),
-            ) { TextMMD(text = stringResource(R.string.rename_confirm), style = MaterialTheme.typography.bodySmall) }
+        if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // Held across, the keyboard leaves room for one row under the title: the buttons go
+            // beside the field, so they stay above the keyboard and can be pressed.
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                field(Modifier.weight(1f))
+                Spacer(Modifier.width(10.dp))
+                cancel(Modifier.width(110.dp))
+                Spacer(Modifier.width(8.dp))
+                rename(Modifier.width(110.dp))
+            }
+        } else {
+            Spacer(Modifier.height(14.dp))
+            field(Modifier.fillMaxWidth())
+            Spacer(Modifier.height(18.dp))
+            Row(Modifier.fillMaxWidth()) {
+                cancel(Modifier.weight(1f))
+                Spacer(Modifier.width(10.dp))
+                rename(Modifier.weight(1f))
+            }
         }
     }
 }
