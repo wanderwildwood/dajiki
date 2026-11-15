@@ -119,6 +119,19 @@ fun besideName(name: String): String {
 }
 
 /**
+ * What to call the sheet that keeps what was typed, when [name] can no longer be written to.
+ *
+ * A sheet that changed somewhere else is still there, so the words go beside it ([besideName]).
+ * A sheet that is gone from the folder ([gone]) leaves its own name free, and the words go back
+ * under it: today's page deleted from outside comes back as today's page, not as a
+ * "(this phone)" copy that By day and Search then show beside a second, empty page for the same
+ * day. [taken] is what the folder holds now; if the name has been taken again since, the words
+ * go beside it after all.
+ */
+fun keepName(name: String, gone: Boolean, taken: Collection<String>): String =
+    if (gone && name !in taken) name else besideName(name)
+
+/**
  * The folder the reader chose, and the sheets in it.
  *
  * Everything goes through the document provider rather than a path. That is what lets the

@@ -29,6 +29,16 @@ class SheetsTest {
         assertEquals("notes (this phone)", besideName("notes"))
     }
 
+    @Test
+    fun aSheetGoneFromTheFolderComesBackUnderItsOwnName() {
+        // Today's page deleted from outside while open: the words keep the day's name.
+        assertEquals("2026-11-14.txt", keepName("2026-11-14.txt", gone = true, taken = listOf("notes.txt")))
+        // Taken again since (a sync app put one back): beside it, as for a sheet that changed.
+        assertEquals("2026-11-14 (this phone).txt", keepName("2026-11-14.txt", gone = true, taken = listOf("2026-11-14.txt")))
+        // Changed elsewhere, still there: always beside it.
+        assertEquals("notes (this phone).md", keepName("notes.md", gone = false, taken = emptyList()))
+    }
+
     // t/16264: with "New sheets saved as" on plain text, sheets made through Cabinet's folder
     // picker came out with no extension and no text type, and the list passed over them.
 

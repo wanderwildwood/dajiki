@@ -150,7 +150,7 @@
     <string name="about_body">A text editor for writing with a keyboard connected to the phone, in landscape unless you turn it in Settings. It keeps a diary too: a page for each day, a month of the days you wrote on, and a search through every sheet. What you write is ordinary text files in a folder you choose, which any other app can open.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy">Everything you write stays on this phone. The app has no internet access, so nothing is sent anywhere, and nothing is collected about you.</string>
-    <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. Your sheets stay in that folder if this app is uninstalled. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. Backups and exports go only where you choose to save them.</string>
+    <string name="about_privacy_more">Your sheets are saved only in the folder you choose; if a sync app watches that folder, copying them elsewhere is that app\'s doing. Your sheets stay in that folder if this app is uninstalled. The donate link opens in your browser; this app never goes online itself. There are no ads, no analytics and no tracking. The app makes no backups or exports of its own, and is left out of the phone\'s backups: to keep a copy of your writing, copy the folder.</string>
     <string name="about_terms_title">Terms</string>
     <string name="about_terms">This app is free software under the GNU General Public License v3. It comes with no warranty: use it at your own risk.</string>
     <!-- The name of the app's licence -->
@@ -185,6 +185,9 @@
     <!-- %1$s is the file that is no longer in the folder, %2$s the new file holding what was typed; the reader is still on that new sheet -->
     <string name="trouble_gone_here">%1$s is no longer in the folder, so nothing could be written to it. What you typed is in %2$s, which is the sheet you are in.</string>
     <string name="trouble_gone_away">%1$s is no longer in the folder, so nothing could be written to it. What you typed is in %2$s.</string>
+    <!-- %1$s is the file that was no longer in the folder and has been made again, under the same name, with what was typed -->
+    <string name="trouble_gone_remade_here">%1$s was no longer in the folder, so it has been made again with what you typed. It is the sheet you are in.</string>
+    <string name="trouble_gone_remade_away">%1$s was no longer in the folder, so it has been made again with what you typed.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_moved_on_no_copy">%1$s changed somewhere else, and a second copy could not be made either. Nothing has been written over. What you typed is still on this page — get it somewhere safe before leaving it.</string>
     <!-- %1$s is the file name -->
@@ -213,7 +216,7 @@
     <string name="privacy_contact_title">How to contact us</string>
     <string name="privacy_contact">Write to email@wanderthe.dev, about your data or anything else.</string>
     <string name="privacy_rights_title">Your rights</string>
-    <string name="privacy_rights">Under the GDPR you can ask to see the data held about you, to have it corrected or deleted, to limit or object to its use, to take a copy with you, to withdraw consent, and to complain to a data protection authority. Since the app keeps what it stores only on your phone, you can do most of this yourself: delete a sheet in the app\'s Files list or its file in your folder, clear the app\'s data in Android\'s settings, or uninstall the app.</string>
+    <string name="privacy_rights">Under the GDPR you can ask to see the data held about you, to have it corrected or deleted, to limit or object to its use, to take a copy with you, to withdraw consent, and to complain to a data protection authority. Since the app keeps what it stores only on your phone, you can do most of this yourself: delete a sheet in the app\'s Sheets list or its file in your folder, clear the app\'s data in Android\'s settings, or uninstall the app.</string>
     <!-- /shared-about -->
     <string name="settings_dark">Dark mode</string>
     <string name="settings_dark_note">White on black, in this app. Home has one switch for every app.</string>

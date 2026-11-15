@@ -645,7 +645,8 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
         runCatching {
             withContext(Dispatchers.IO) {
-                val copy = folder.createBeside(where, besideName(sheet.name), sheet.diary)
+                val taken = if (gone) folder.list(where, sheet.diary).filter { it.diary == sheet.diary }.map { it.name } else emptyList()
+                val copy = folder.createBeside(where, keepName(sheet.name, gone, taken), sheet.diary)
                 folder.write(copy.uri, text)
                 copy to folder.stamp(copy.uri)
             }
@@ -667,10 +668,14 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 _state.update {
                     it.copy(
                         opened = if (stillReading) Opened(copy, text) else null,
-                        sheets = listOf(copy) + it.sheets,
+                        // A sheet that is gone leaves the list; its words are in the copy.
+                        sheets = listOf(copy) + it.sheets.filterNot { s -> s.uri == copy.uri || (gone && s.uri == sheet.uri) },
                         unsaved = false,
                         trouble = getApplication<Application>().getString(
                             when {
+                                // Made again under its own name: nothing beside it to point to.
+                                gone && copy.name == sheet.name && stillReading -> R.string.trouble_gone_remade_here
+                                gone && copy.name == sheet.name -> R.string.trouble_gone_remade_away
                                 gone && stillReading -> R.string.trouble_gone_here
                                 gone -> R.string.trouble_gone_away
                                 stillReading -> R.string.trouble_moved_on_here
