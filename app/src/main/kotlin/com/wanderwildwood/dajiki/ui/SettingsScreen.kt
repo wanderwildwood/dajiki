@@ -42,6 +42,12 @@ import com.wanderwildwood.dajiki.write.PageState
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.next
 import com.wanderwildwood.dajiki.write.Turn
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
 
 /**
  * What there is to set.
@@ -269,6 +275,7 @@ private fun TurnDialog(chosen: Turn, onPick: (Turn) -> Unit, onDismiss: () -> Un
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
+                    .semantics { role = Role.RadioButton; selected = turn == chosen }
                     .clickable { onPick(turn) },
             ) {
                 RadioButtonMMD(selected = turn == chosen, onClick = null)
@@ -302,6 +309,7 @@ private fun Toggle(title: String, note: String?, checked: Boolean, onClick: () -
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .semantics { role = Role.Switch; toggleableState = ToggleableState(checked) }
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
     ) {
