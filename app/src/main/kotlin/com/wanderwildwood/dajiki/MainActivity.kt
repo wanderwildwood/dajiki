@@ -40,6 +40,7 @@ import com.wanderwildwood.dajiki.ui.FilesScreen
 import com.wanderwildwood.dajiki.ui.FolderActions
 import com.wanderwildwood.dajiki.ui.LockScreen
 import com.wanderwildwood.dajiki.write.LockScope
+import com.wanderwildwood.dajiki.write.Showing
 import com.wanderwildwood.dajiki.write.Unlock
 import com.wanderwildwood.dajiki.write.isDiaryPage
 import com.wanderwildwood.dajiki.write.Turn
@@ -231,6 +232,13 @@ private fun Typewriter(
     BackHandler(enabled = settingsOpen || state.opened != null) {
         if (settingsOpen) settingsOpen = false else viewModel.close()
     }
+    // Back from By day or Search goes to Sheets; only Back from Sheets leaves the app. With the
+    // keyboard put away after a search, Back used to close the app outright, and on this panel
+    // the launcher is then under the next tap.
+    BackHandler(
+        enabled = !covered && !settingsOpen && state.opened == null && state.folder != null &&
+            looking.showing != Showing.SHEETS,
+    ) { viewModel.show(Showing.SHEETS) }
 
     when {
         covered -> LockScreen(
