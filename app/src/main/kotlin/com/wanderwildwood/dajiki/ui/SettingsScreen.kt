@@ -187,7 +187,7 @@ fun SettingsScreen(
             item {
                 Toggle(
                     title = stringResource(R.string.settings_dark),
-                    note = stringResource(R.string.settings_dark_note),
+                    note = null,
                     checked = DarkMode.on,
                     onClick = { DarkMode.set(context, !DarkMode.on) },
                 )
