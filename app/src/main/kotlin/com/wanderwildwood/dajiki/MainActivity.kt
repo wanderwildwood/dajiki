@@ -269,6 +269,7 @@ private fun Typewriter(
             size = state.size,
             unsaved = state.unsaved,
             showWordCount = state.wordCount,
+            currentText = viewModel::currentText,
             onEdited = viewModel::edited,
             onSaveNow = viewModel::saveNow,
             onNew = viewModel::newSheet,

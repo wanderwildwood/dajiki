@@ -51,6 +51,7 @@ import com.wanderwildwood.dajiki.write.Opened
 import com.wanderwildwood.dajiki.write.Size
 import com.wanderwildwood.dajiki.write.next
 import com.wanderwildwood.dajiki.write.countWords
+import com.wanderwildwood.dajiki.write.fieldStart
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
@@ -75,6 +76,7 @@ fun PageScreen(
     size: Size,
     unsaved: Boolean,
     showWordCount: Boolean,
+    currentText: () -> String,
     onEdited: (String) -> Unit,
     onSaveNow: () -> Unit,
     onNew: () -> Unit,
@@ -95,9 +97,14 @@ fun PageScreen(
      * starts at the end: a sheet is almost always opened to carry on, and the alternative is a
      * reader who types their next sentence into the top of the last one. A sheet opened from a
      * search is the exception, and starts at the word that was found.
+     *
+     * The words come from the view model as they are now, not from [opened]: the field is made
+     * again each time the page comes back from under the lock screen or a rebuilt activity,
+     * and [opened] still holds the sheet as it was when it opened. See [fieldStart].
      */
     val field = remember(opened) {
-        TextFieldState(opened.text, TextRange(opened.at ?: opened.text.length))
+        val (text, at) = fieldStart(opened.text, opened.at, currentText())
+        TextFieldState(text, TextRange(at))
     }
 
     // Every change out to the view model, which does its own waiting before it writes. A
@@ -112,7 +119,7 @@ fun PageScreen(
      * every character, and a repaint on this panel is a visible flash. Keyed on the text, so
      * each keystroke restarts the wait and the count lands once the writer pauses.
      */
-    var words by remember(opened) { mutableIntStateOf(countWords(opened.text)) }
+    var words by remember(opened) { mutableIntStateOf(countWords(field.text.toString())) }
     // Keyed on the setting as well, so that turning the count off also stops the counting.
     LaunchedEffect(field, showWordCount) {
         if (!showWordCount) return@LaunchedEffect

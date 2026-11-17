@@ -34,6 +34,18 @@ import java.util.concurrent.ConcurrentHashMap
  */
 data class Opened(val sheet: Sheet, val text: String, val at: Int? = null)
 
+/**
+ * What a page's text field starts with, and where its cursor goes: the words as they stand now
+ * ([current], the view model's copy of what is on the page) rather than as they were when the
+ * sheet opened. The field is made again whenever the page leaves the screen and comes back —
+ * under the lock screen after a while away, or when the activity is rebuilt for a change of dark
+ * mode or language — and a field seeded from the opening text would put back the sheet as it was
+ * an hour ago and save that over everything typed since. Where nothing has been typed, the
+ * cursor goes where the opening asked for; otherwise to the end, where the writing stopped.
+ */
+fun fieldStart(opened: String, at: Int?, current: String): Pair<String, Int> =
+    if (current == opened) opened to (at ?: opened.length) else current to current.length
+
 /** The three ways of looking at the folder: its sheets newest first, a month of days, and a search. */
 enum class Showing { SHEETS, DAYS, SEARCH }
 
@@ -124,6 +136,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * the glyph, which on a fast typist with a real keyboard is how characters get lost.
      */
     private var pending: String = ""
+
+    /** What is on the page now, read once by a text field as it is made. See [fieldStart]. */
+    fun currentText(): String = pending
 
     /**
      * What the sheet looked like from the outside when this app last read or wrote it, and
