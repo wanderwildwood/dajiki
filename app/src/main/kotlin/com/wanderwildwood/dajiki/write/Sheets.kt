@@ -29,7 +29,21 @@ fun isDiaryPage(sheet: Sheet): Boolean = isDiaryPage(sheet.name, sheet.diary)
 
 /** [isDiaryPage] by the sheet's name and whether it is in the Diary folder. */
 fun isDiaryPage(name: String, inDiaryFolder: Boolean): Boolean =
-    inDiaryFolder || dayInName(name)?.let { isPageFor(name, it) } == true
+    inDiaryFolder || notBeside(name).let { n -> dayInName(n)?.let { isPageFor(n, it) } == true }
+
+/**
+ * [name] without the " (this phone)" that [besideName] puts on a copy, however many times, so
+ * the copy of a day page made when a sync clashed is locked with the diary as its page is.
+ */
+private fun notBeside(name: String): String {
+    val dot = name.lastIndexOf('.')
+    var stem = if (dot > 0) name.substring(0, dot) else name
+    val ext = if (dot > 0) name.substring(dot) else ""
+    while (stem.endsWith(BESIDE)) stem = stem.removeSuffix(BESIDE)
+    return stem + ext
+}
+
+private const val BESIDE = " (this phone)"
 
 /**
  * What the Sheets tab lists: everything, or with the diary in its own folder, everything but

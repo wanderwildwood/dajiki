@@ -82,6 +82,9 @@ class SheetsTest {
         assertTrue(isDiaryPage("2026-11-08.txt", inDiaryFolder = false))
         assertTrue(isDiaryPage("2026-11-08.md", inDiaryFolder = false))
         assertTrue(isDiaryPage("2026-11-08", inDiaryFolder = false))
+        // The copy kept when a sync clashed is the same day's page.
+        assertTrue(isDiaryPage(besideName("2026-11-08.txt"), inDiaryFolder = false))
+        assertTrue(isDiaryPage(besideName(besideName("2026-11-08.txt")), inDiaryFolder = false))
         assertTrue(isDiaryPage("Notes from the walk.txt", inDiaryFolder = true))
     }
 
