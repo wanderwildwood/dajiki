@@ -793,7 +793,10 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * cleared where it was this one, or the app would try to reopen a file that is gone on
      * its next start.
      */
-    fun deleteSheet(sheet: Sheet) {
+    /** A diary page is behind the diary's lock for deleting as well as for reading. */
+    fun deleteSheet(sheet: Sheet) = guarded(isDiaryPage(sheet)) { deleteSheetNow(sheet) }
+
+    private fun deleteSheetNow(sheet: Sheet) {
         viewModelScope.launch {
             runCatching { withContext(Dispatchers.IO) { folder.delete(sheet.uri) } }
                 .onSuccess {
