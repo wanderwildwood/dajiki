@@ -240,8 +240,8 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         list(uri)
     }
 
-    private fun list(uri: Uri) {
-        viewModelScope.launch { listNow(uri) }
+    private fun list(uri: Uri, reopen: Boolean = true) {
+        viewModelScope.launch { listNow(uri, reopen) }
     }
 
     private suspend fun listNow(uri: Uri, reopen: Boolean = true) {
@@ -745,7 +745,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     fun resumed() {
         // No sheet open: the folder list may be stale after a sync or another app's work.
         if (state.value.opened == null) {
-            state.value.folder?.let { list(it) }
+            // Listed again only: the sheet last open comes back at the start, never on its own
+            // later (a diary page left shut by the lock stays shut).
+            state.value.folder?.let { list(it, reopen = false) }
             return
         }
         val sheet = state.value.opened?.sheet ?: return
@@ -845,7 +847,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val wanted = !state.value.diaryFolder
         preferences.diaryFolder = wanted
         _state.update { it.copy(diaryFolder = wanted) }
-        state.value.folder?.let { list(it) }
+        state.value.folder?.let { list(it, reopen = false) }
     }
 
     /**
