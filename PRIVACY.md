@@ -20,7 +20,7 @@ other apps. Only something signed with the same key could hold it, which means o
 It is a lock, not a key.
 
 The folder your writing lives in is not reached through a storage permission. You pick it
-from the system's own folder picker, and the grant that comes back covers that folder and
+through Cabinet's folder chooser if it is installed, otherwise the system's own folder picker, and the grant that comes back covers that folder and
 nothing else — not the rest of your storage, and not any other folder.
 
 ## Where your writing is

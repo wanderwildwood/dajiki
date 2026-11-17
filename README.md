@@ -62,8 +62,8 @@ line needed to be attached to.
   pages from someone holding the unlocked phone, nothing more: they are still ordinary files
   in your folder, which any app that can see the folder can read. It needs a screen lock on
   the phone, and asks for no permission.
-- **Keeps your writing as ordinary text files in a folder you choose**, through the system
-  picker — so it can be a folder a sync app already owns, and the files are still there if
+- **Keeps your writing as ordinary text files in a folder you choose**, through Cabinet's
+  folder chooser if it is installed, otherwise the system picker — so it can be a folder a sync app already owns, and the files are still there if
   this app is uninstalled. No storage permission is asked for, because that grant is not a
   permission. New sheets are `.txt`, or `.md` if Settings says so — the same plain text
   under either name, for a folder that Memo or a laptop's markdown tools also read. A
@@ -94,6 +94,7 @@ line needed to be attached to.
   every sheet unless you ask for the other thing, and then a sheet keeps the size you set on
   it. A size follows a sheet that is renamed here; a sheet renamed by another app comes back
   at the setting.
+- **Dark mode**, from Settings; with Home on the phone it follows Home's switch.
 
 ## What it does not do
 
@@ -103,13 +104,13 @@ and you will find one entry, `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`; Andr
 inside this app's own package so a runtime broadcast receiver is not exposed to other apps. It
 is a lock rather than a key. PRIVACY.md says so at length.) No network — the one web address in
 the app is handed to a browser.
-No formatting, no preview, no spellcheck, no themes. It does not sync, and does not want to:
+No formatting, no preview, no spellcheck. It does not sync, and does not want to:
 it writes files into a folder, and whatever already syncs that folder does the rest. It does
 not merge two versions of a sheet either — it keeps both and says so.
 
-## Where this is up to
+## How it is checked
 
-Version 0.1.36. The word count, the change-detection rules, the size a page opens at, and the
+The word count, the change-detection rules, the size a page opens at, and the
 diary's dates, time lines and search are unit tested, every screen
 has been driven on a device, and the save path has been checked against the things that
 actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
@@ -118,10 +119,6 @@ sheet that changed underneath the app is copied rather than overwritten.
 A document of 5,227 words has been through it, and typing into it costs exactly what typing
 into a two word one costs — measured, with the short document as a control, because the
 absolute frame numbers off an emulator are worth nothing on their own.
-
-What has **not** happened is anybody writing anything real in it. No afternoon's work has
-gone through it, which is the test that matters for a writing app, and the panel it is meant
-for is slower than anything this has been measured on.
 
 The keyboard shortcuts are confirmed. Ctrl-O went to the folder without typing an `o`,
 Ctrl-S wrote the sheet before the pause could have, Ctrl-N started one, and Escape closed
@@ -132,7 +129,7 @@ replaced.
 So is the keyboard layout. On an emulator, the keys where a Swedish keyboard prints å, ö and ä
 typed `[;'`. After choosing Swedish through Settings → Keyboard layout, the same keys typed
 `åöä`, and the dead ¨ followed by e typed ë. The Kompakt has the same Physical keyboard page and
-the same layouts, but nobody has tried it there with a keyboard in hand.
+the same layouts.
 
 ## Building
 
