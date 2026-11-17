@@ -684,25 +684,28 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
             .onSuccess { (copy, stamp) ->
-                seen = stamp
-                written = text
-                pending = text
-                stalled = false
-
                 // This also runs on the way out of a sheet, where the reader has just asked
                 // for the folder. Following the copy is right when they are still on the
                 // page and wrong when they are not: pressing Files and being dropped back
                 // into a sheet they did not open would be its own small betrayal.
                 val stillReading = state.value.opened != null && !leaving
+                // Words typed while the copy was being made stay on the page, marked unsaved,
+                // and the next pause writes them into the copy.
+                val typedSince = stillReading && pending != text
+                val onPage = if (typedSince) pending else text
+                seen = stamp
+                written = text
+                pending = onPage
+                stalled = false
                 if (stillReading) preferences.lastOpen = copy.uri
                 preferences.copySize(sheet.uri, copy.uri)
 
                 _state.update {
                     it.copy(
-                        opened = if (stillReading) Opened(copy, text) else null,
+                        opened = if (stillReading) Opened(copy, onPage) else null,
                         // A sheet that is gone leaves the list; its words are in the copy.
                         sheets = listOf(copy) + it.sheets.filterNot { s -> s.uri == copy.uri || (gone && s.uri == sheet.uri) },
-                        unsaved = false,
+                        unsaved = typedSince,
                         trouble = getApplication<Application>().getString(
                             when {
                                 // Made again under its own name: nothing beside it to point to.
@@ -761,6 +764,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }.getOrNull() ?: return@launch
+            // Typed into, or moved to another sheet, while the file was read: what is on the
+            // page now is newer than the file and stays.
+            if (state.value.unsaved || state.value.opened?.sheet?.uri != sheet.uri) return@launch
 
             val (stamp, text) = fresh
             pending = text
