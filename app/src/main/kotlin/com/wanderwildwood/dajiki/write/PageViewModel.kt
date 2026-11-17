@@ -1018,7 +1018,8 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun say(words: String, reason: Throwable) {
         _state.update { it.copy(trouble = words) }
-        reason.printStackTrace()
+        // Only in a debug build: the reasons carry sheet names and the folder's path.
+        if (com.wanderwildwood.dajiki.BuildConfig.DEBUG) reason.printStackTrace()
     }
 
     private companion object {
