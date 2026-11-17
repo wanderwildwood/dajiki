@@ -89,6 +89,14 @@ class SheetsTest {
     }
 
     @Test
+    fun aSheetNotInUtf8IsRefusedRatherThanSpoilt() {
+        assertEquals("café", decodeSheet("café".toByteArray(Charsets.UTF_8)))
+        val latin1 = "café".toByteArray(Charsets.ISO_8859_1)
+        assertTrue(runCatching { decodeSheet(latin1) }.isFailure)
+        assertTrue(runCatching { decodeSheet(ByteArray(MAX_SHEET_BYTES + 1)) }.isFailure)
+    }
+
+    @Test
     fun aRenameKeepsTheExtensionUnlessOneWasTyped() {
         assertEquals("Ch. 2 draft.txt", renamed("Draft.txt", "Ch. 2 draft"))
         assertEquals("v1.2 notes.md", renamed("Notes.md", "v1.2 notes"))

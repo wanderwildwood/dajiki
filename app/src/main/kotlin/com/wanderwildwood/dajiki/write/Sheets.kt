@@ -316,7 +316,7 @@ class Folder(context: Context) {
 
     /** Everything in a sheet, as text. */
     fun read(uri: Uri): String =
-        resolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+        resolver.openInputStream(uri)?.use { decodeSheet(readAtMost(it, MAX_SHEET_BYTES + 1)) }
             ?: error("The folder would not open ${uri.lastPathSegment}.")
 
     /**
@@ -443,4 +443,36 @@ class Folder(context: Context) {
             diary = diary,
         )
     }
+}
+
+/** The largest sheet opened: far past any writing, short of a phone running out of memory. */
+const val MAX_SHEET_BYTES = 16 * 1024 * 1024
+
+/**
+ * A sheet's bytes as text, or a refusal: a file too big to be writing, or one that is not
+ * UTF-8 (a file from elsewhere in another encoding), which saving would otherwise rewrite
+ * with every letter it could not read replaced.
+ */
+fun decodeSheet(bytes: ByteArray): String {
+    if (bytes.size > MAX_SHEET_BYTES) error("It is too big to be a sheet.")
+    return try {
+        Charsets.UTF_8.newDecoder()
+            .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+            .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+            .decode(java.nio.ByteBuffer.wrap(bytes))
+            .toString()
+    } catch (e: java.nio.charset.CharacterCodingException) {
+        error("It is not in UTF-8, and saving would spoil it.")
+    }
+}
+
+private fun readAtMost(input: java.io.InputStream, limit: Int): ByteArray {
+    val out = java.io.ByteArrayOutputStream()
+    val buf = ByteArray(64 * 1024)
+    while (out.size() < limit) {
+        val n = input.read(buf, 0, minOf(buf.size, limit - out.size()))
+        if (n < 0) break
+        out.write(buf, 0, n)
+    }
+    return out.toByteArray()
 }

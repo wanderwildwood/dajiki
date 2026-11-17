@@ -931,6 +931,8 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val now = state.value
         if (!away || now.lock == LockScope.OFF || !now.unlocked) return
         afterUnlock = null
+        // The text Search kept is let go with the lock: it is read again once unlocked.
+        readForSearch.clear()
         val covered = now.lock == LockScope.APP || now.opened?.sheet?.let(::isDiaryPage) == true
         _state.update { it.copy(unlocked = false, asking = covered) }
         if (now.lock == LockScope.DIARY) _looking.update { it.copy(showing = Showing.SHEETS) }
