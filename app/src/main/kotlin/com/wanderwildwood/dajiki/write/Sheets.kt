@@ -86,6 +86,20 @@ fun changedBetween(before: Stamp, now: Stamp): Boolean? = when {
 fun vanished(before: Stamp?, now: Stamp?): Boolean = before != null && now == null
 
 /**
+ * The new name for a sheet called [was] when the reader types [wanted]: its extension is kept
+ * unless what was typed already ends in one this app writes, so "Ch. 2 draft" stays a sheet.
+ */
+fun renamed(was: String, wanted: String): String {
+    val extension = was.substringAfterLast('.', "")
+    if (extension.isEmpty()) return wanted
+    val lower = wanted.lowercase(Locale.ROOT)
+    val typedOne = WRITING_EXTENSIONS.any { lower.endsWith(".$it") }
+    return if (typedOne) wanted else "$wanted.$extension"
+}
+
+private val WRITING_EXTENSIONS = listOf("txt", "md", "markdown", "text")
+
+/**
  * Whether a file in the folder is something this app should offer to open.
  *
  * The extension catches a sheet a sync app has put there with no type on it at all, which is
@@ -287,8 +301,7 @@ class Folder(context: Context) {
         val was = sheet.name
         val trimmed = wanted.trim()
         if (trimmed.isEmpty()) return null
-        val extension = was.substringAfterLast('.', "")
-        val name = if (extension.isNotEmpty() && !trimmed.contains('.')) "$trimmed.$extension" else trimmed
+        val name = renamed(was, trimmed)
         if (name == was) return null
         val moved = DocumentsContract.renameDocument(resolver, uri, name) ?: return null
         return Sheet(uri = moved, name = nameOf(moved) ?: name, modified = System.currentTimeMillis(), diary = sheet.diary)

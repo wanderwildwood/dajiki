@@ -89,6 +89,15 @@ class SheetsTest {
     }
 
     @Test
+    fun aRenameKeepsTheExtensionUnlessOneWasTyped() {
+        assertEquals("Ch. 2 draft.txt", renamed("Draft.txt", "Ch. 2 draft"))
+        assertEquals("v1.2 notes.md", renamed("Notes.md", "v1.2 notes"))
+        assertEquals("Letter.md", renamed("Letter.txt", "Letter.md"))
+        assertEquals("Letter.TXT", renamed("Letter.txt", "Letter.TXT"))
+        assertEquals("Plain", renamed("2026-11-08", "Plain"))
+    }
+
+    @Test
     fun anOrdinarySheetIsNotTheDiary() {
         assertFalse(isDiaryPage("2026-11-08 1432.txt", inDiaryFolder = false))
         assertFalse(isDiaryPage("Letter to Ada.txt", inDiaryFolder = false))
