@@ -766,6 +766,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val text = pending
         viewModelScope.launch {
             save(sheet, text)
+            // The save found the sheet changed elsewhere (the page has moved to a copy) or could
+            // not write: renaming now would rename the other copy and let the next save over it.
+            if (state.value.opened?.sheet?.uri != sheet.uri || written != text) return@launch
             val moved = runCatching {
                 withContext(Dispatchers.IO) { folder.rename(sheet, wanted) }
             }.getOrElse { reason ->
