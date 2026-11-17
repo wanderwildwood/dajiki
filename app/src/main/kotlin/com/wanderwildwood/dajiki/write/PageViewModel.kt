@@ -274,9 +274,10 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     fun open(sheet: Sheet, at: Int? = null) = guarded(isDiaryPage(sheet)) { openNow(sheet, at) }
 
     private fun openNow(sheet: Sheet, at: Int? = null) {
-        saveNow()
+        val leavingPage = pageToSave()
         val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
+            leavingPage?.let { (was, text) -> save(was, text) }
             runCatching {
                 withContext(Dispatchers.IO) {
                     // Stamped before the read, never after. If the file changes in the gap
@@ -323,12 +324,13 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val today = LocalDate.now()
         val current = state.value.opened?.sheet
         if (current != null && isPageFor(current.name, today)) return
-        saveNow()
+        val leavingPage = pageToSave()
         val abandoned = untouched(current, pending)
         val format = state.value.format
         val diary = state.value.diaryFolder
 
         viewModelScope.launch {
+            leavingPage?.let { (was, text) -> save(was, text) }
             runCatching {
                 withContext(Dispatchers.IO) {
                     val found = folder.list(where, diary)
@@ -456,9 +458,10 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
     fun newSheet() {
         val where = state.value.folder ?: return
-        saveNow()
+        val leavingPage = pageToSave()
         val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
+            leavingPage?.let { (was, text) -> save(was, text) }
             runCatching { withContext(Dispatchers.IO) { folder.create(where, state.value.format) } }
                 .onSuccess { sheet ->
                     if (abandoned != null) discard(abandoned)
@@ -540,6 +543,20 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             delay(PAUSE)
             save()
         }
+    }
+
+    /**
+     * The open sheet and its text, taken now, when they have words not yet written; the
+     * pause's save is called off. Before another page opens, these are written in the same
+     * coroutine that then opens it, so the save cannot land after the switch and write the new
+     * page's text, or take the old page's last words with it.
+     */
+    private fun pageToSave(): Pair<Sheet, String>? {
+        pause?.cancel()
+        pause = null
+        if (!state.value.unsaved) return null
+        val sheet = state.value.opened?.sheet ?: return null
+        return sheet to pending
     }
 
     /** Write now, whatever the wait was doing. Called on the way out of the app and the sheet. */
