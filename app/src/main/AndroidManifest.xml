@@ -45,7 +45,8 @@
             running behind it to hold the screen round. A reader whose keyboard case sits
             the other way up can turn it in Settings, which overrides this at runtime.
 
-            `keyboard` and `keyboardHidden` are in configChanges deliberately. Without them
+            `keyboard`, `keyboardHidden` and `navigation` (a keyboard with arrow keys) are in
+            configChanges deliberately. Without them
             Android destroys and recreates the activity when a Bluetooth keyboard connects
             or drops, which on a writing app means the reader loses whatever was typed since
             the last save at the exact moment their keyboard reconnects.
@@ -61,7 +62,7 @@
             android:exported="true"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize">
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
