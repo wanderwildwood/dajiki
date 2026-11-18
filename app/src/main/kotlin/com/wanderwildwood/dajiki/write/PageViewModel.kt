@@ -398,9 +398,22 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         return SimpleDateFormat(pattern, Locale.getDefault()).format(Date())
     }
 
-    /** By day and Search are the diary's side: By day lists its pages, Search reads them. */
+    /**
+     * By day and Search are the diary's side: By day lists its pages, Search reads them. A search
+     * left in the box is answered again on the way into Search, since what it found was let go
+     * when the lock came back.
+     */
     fun show(showing: Showing) =
-        guarded(diarySide = showing != Showing.SHEETS) { _looking.update { it.copy(showing = showing) } }
+        guarded(diarySide = showing != Showing.SHEETS) {
+            _looking.update { it.copy(showing = showing) }
+            searchAgainIfShown()
+        }
+
+    /** Answer the search in the box again, where Search is the tab on screen. */
+    private fun searchAgainIfShown() {
+        val now = looking.value
+        if (now.showing == Showing.SEARCH && now.query.isNotBlank()) search(now.query, again = true)
+    }
 
     fun stepMonth(by: Long) = _looking.update { it.copy(month = it.month.plusMonths(by)) }
 
@@ -429,7 +442,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         if (!again && query == looking.value.query) return
         _looking.update { it.copy(query = query) }
         hunt?.cancel()
-        if (query.isBlank()) {
+        // Blank, or behind the diary's lock: Search reads every page, so nothing is read while
+        // the lock is up. The query stays, and is answered once Search is opened past the lock.
+        if (query.isBlank() || needsLock(state.value.lock, state.value.unlocked, diarySide = true)) {
             _looking.update { it.copy(searched = "", hits = emptyList(), searching = false, more = false) }
             return
         }
@@ -937,7 +952,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         when (answer) {
             Unlock.DONE -> {
                 _state.update { it.copy(asking = false, unlocked = true) }
-                waiting?.invoke()
+                if (waiting != null) waiting() else searchAgainIfShown()
             }
             Unlock.CANCELLED -> _state.update { it.copy(asking = false) }
             Unlock.NO_SCREEN_LOCK -> {
@@ -976,8 +991,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val now = state.value
         if (!away || now.lock == LockScope.OFF || !now.unlocked) return
         afterUnlock = null
-        // The text Search kept is let go with the lock: it is read again once unlocked.
+        // The text Search kept is let go with the lock, and the lines it found with it: they are
+        // read again once unlocked.
+        hunt?.cancel()
         readForSearch.clear()
+        _looking.update { it.copy(searched = "", hits = emptyList(), searching = false, more = false) }
         val covered = now.lock == LockScope.APP || now.opened?.sheet?.let(::isDiaryPage) == true
         _state.update { it.copy(unlocked = false, asking = covered) }
         if (now.lock == LockScope.DIARY) _looking.update { it.copy(showing = Showing.SHEETS) }
