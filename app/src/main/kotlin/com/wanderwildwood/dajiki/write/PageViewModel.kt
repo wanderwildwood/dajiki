@@ -798,6 +798,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
+    /** How many times a sheet has been read again by [resumed], for [Opened.reload]. */
+    private var reloads = 0L
+
     /**
      * The app has come back to the front. If the open sheet moved on while it was away and
      * nothing here is unsaved, show what arrived.
@@ -805,9 +808,6 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * Only when there is nothing in flight. With unsaved words on the page this does nothing
      * and leaves it to the save, which will keep both copies rather than pick one.
      */
-    /** How many times a sheet has been read again by [resumed], for [Opened.reload]. */
-    private var reloads = 0L
-
     fun resumed() {
         // No sheet open: the folder list may be stale after a sync or another app's work.
         if (state.value.opened == null) {
