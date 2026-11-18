@@ -43,6 +43,7 @@ import com.wanderwildwood.dajiki.write.LockScope
 import com.wanderwildwood.dajiki.write.Showing
 import com.wanderwildwood.dajiki.write.Unlock
 import com.wanderwildwood.dajiki.write.isDiaryPage
+import com.wanderwildwood.dajiki.write.keepsOutOfRecents
 import com.wanderwildwood.dajiki.write.Turn
 import com.wanderwildwood.dajiki.ui.PageScreen
 import com.wanderwildwood.dajiki.ui.SettingsScreen
@@ -202,6 +203,11 @@ private fun Typewriter(
         LockScope.DIARY -> opened != null && !settingsOpen && isDiaryPage(opened.sheet)
     }
     val lockTitle = stringResource(if (state.lock == LockScope.APP) R.string.lock_title_app else R.string.lock_title_diary)
+    // While a lock is set, no Recents picture and no screenshots of what it keeps.
+    LaunchedEffect(state.lock) {
+        val secure = android.view.WindowManager.LayoutParams.FLAG_SECURE
+        if (keepsOutOfRecents(state.lock)) activity.window.addFlags(secure) else activity.window.clearFlags(secure)
+    }
     /*
      * Asked through the phone's own "confirm your PIN" screen (pattern or password, as the
      * phone is set), which needs no permission: the app still asks for none. It is the older of

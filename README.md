@@ -60,8 +60,9 @@ line needed to be attached to.
 - **A lock**, using the phone's own screen lock (its PIN, pattern or password) before the diary
   opens, or before the whole app does. It asks again after three minutes away. It keeps the
   pages from someone holding the unlocked phone, nothing more: they are still ordinary files
-  in your folder, which any app that can see the folder can read. It needs a screen lock on
-  the phone, and asks for no permission.
+  in your folder, which any app that can see the folder can read. While a lock is set the app
+  is left out of screenshots and the Recents picture. It needs a screen lock on the phone, and
+  asks for no permission.
 - **Keeps your writing as ordinary text files in a folder you choose**, through Cabinet's
   folder chooser if it is installed, otherwise the system picker — so it can be a folder a sync app already owns, and the files are still there if
   this app is uninstalled. No storage permission is asked for, because that grant is not a
@@ -107,29 +108,6 @@ the app is handed to a browser.
 No formatting, no preview, no spellcheck. It does not sync, and does not want to:
 it writes files into a folder, and whatever already syncs that folder does the rest. It does
 not merge two versions of a sheet either — it keeps both and says so.
-
-## How it is checked
-
-The word count, the change-detection rules, the size a page opens at, and the
-diary's dates, time lines and search are unit tested, every screen
-has been driven on a device, and the save path has been checked against the things that
-actually lose writing — shortening a sheet leaves no tail of the old one behind it, and a
-sheet that changed underneath the app is copied rather than overwritten.
-
-A document of 5,227 words has been through it, and typing into it costs exactly what typing
-into a two word one costs — measured, with the short document as a control, because the
-absolute frame numbers off an emulator are worth nothing on their own.
-
-The keyboard shortcuts are confirmed. Ctrl-O went to the folder without typing an `o`,
-Ctrl-S wrote the sheet before the pause could have, Ctrl-N started one, and Escape closed
-the page. That took some getting at: the emulator's keyboard uses a layout with no Ctrl key
-defined in it at all, so every combination arrived as a bare letter until the layout was
-replaced.
-
-So is the keyboard layout. On an emulator, the keys where a Swedish keyboard prints å, ö and ä
-typed `[;'`. After choosing Swedish through Settings → Keyboard layout, the same keys typed
-`åöä`, and the dead ¨ followed by e typed ë. The Kompakt has the same Physical keyboard page and
-the same layouts.
 
 ## Building
 

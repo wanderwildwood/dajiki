@@ -25,6 +25,12 @@ fun needsLock(lock: LockScope, unlocked: Boolean, diarySide: Boolean): Boolean =
 }
 
 /**
+ * Whether the window is marked secure: while any lock is set, so the Recents picture and a
+ * screenshot cannot show a page the lock is there to keep. With no lock, screenshots work.
+ */
+fun keepsOutOfRecents(lock: LockScope): Boolean = lock != LockScope.OFF
+
+/**
  * Whether coming back to the app locks it again: it was put away ([stoppedAt], or null if it
  * never was) at least [LOCK_AFTER_MS] ago. A glance at a message and back does not ask again.
  */

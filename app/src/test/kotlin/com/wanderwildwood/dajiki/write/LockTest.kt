@@ -40,4 +40,11 @@ class LockTest {
     fun aLongerTimeAwayLocksAgain() {
         assertTrue(relocks(stoppedAt = 1_000L, now = 1_000L + LOCK_AFTER_MS))
     }
+
+    @Test
+    fun recentsAndScreenshotsAreKeptOutOnlyWhileALockIsSet() {
+        assertFalse(keepsOutOfRecents(LockScope.OFF))
+        assertTrue(keepsOutOfRecents(LockScope.DIARY))
+        assertTrue(keepsOutOfRecents(LockScope.APP))
+    }
 }
