@@ -133,4 +133,27 @@ class SheetsTest {
         assertEquals(all, sheetsTab(all, diaryFolder = false) { it.second })
         assertEquals(listOf("Letter to Ada.txt"), sheetsTab(all, diaryFolder = true) { it.second }.map { it.first })
     }
+
+    @Test
+    fun aWriteThatGoesThroughIsNotTriedAgain() {
+        var tries = 0
+        assertNull(writeTwice { tries++ })
+        assertEquals(1, tries)
+    }
+
+    @Test
+    fun aWriteThatFailsOnceIsTriedOnceMore() {
+        var tries = 0
+        assertNull(writeTwice { if (++tries == 1) error("passing") })
+        assertEquals(2, tries)
+    }
+
+    @Test
+    fun aWriteThatFailsTwiceStopsThereAndKeepsBothReasons() {
+        var tries = 0
+        val failed = writeTwice { error("try ${++tries}") }
+        assertEquals(2, tries)
+        assertEquals("try 2", failed?.message)
+        assertEquals("try 1", failed?.suppressed?.single()?.message)
+    }
 }

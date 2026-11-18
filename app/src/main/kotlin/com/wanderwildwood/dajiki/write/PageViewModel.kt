@@ -655,6 +655,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
         /** Not written: the sheet on disk is no longer the one we were editing. */
         data object MovedOn : Saved
+
+        /** Not written, twice over, and the sheet on disk changed in the trying: it may be cut short. */
+        data object Cut : Saved
     }
 
     /**
@@ -681,8 +684,17 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 } else if (movedOn(sheet.uri, before, onDisk)) {
                     Saved.MovedOn
                 } else {
-                    folder.write(sheet.uri, text)
-                    Saved.Ok(folder.stamp(sheet.uri))
+                    // One more full write at once if the first fails ([writeTwice]). If that
+                    // fails too and the sheet is no longer what it was, the failed writes have
+                    // left it short: the words go beside it, and the reader is told. A sheet
+                    // the failures left untouched is reported as before and tried again later.
+                    val failed = writeTwice { folder.write(sheet.uri, text) }
+                    when {
+                        failed == null -> Saved.Ok(folder.stamp(sheet.uri))
+                        before != null && vanished(before, folder.stamp(sheet.uri)) -> Saved.Gone
+                        movedOn(sheet.uri, before, onDisk) -> Saved.Cut
+                        else -> throw failed
+                    }
                 }
             }
         }
@@ -699,6 +711,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
                     Saved.MovedOn -> keepBeside(sheet, text)
                     Saved.Gone -> keepBeside(sheet, text, gone = true)
+                    Saved.Cut -> keepBeside(sheet, text, cut = true)
                 }
             }
             .onFailure { say(getApplication<Application>().getString(R.string.trouble_save_failed, sheet.name), it) }
@@ -735,7 +748,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * screen. The page then follows the new sheet, or the very next keystroke would conflict
      * against the same file again and leave a trail of copies.
      */
-    private suspend fun keepBeside(sheet: Sheet, text: String, gone: Boolean = false) {
+    private suspend fun keepBeside(sheet: Sheet, text: String, gone: Boolean = false, cut: Boolean = false) {
         val where = state.value.folder ?: return
 
         runCatching {
@@ -771,6 +784,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                         unsaved = typedSince,
                         trouble = getApplication<Application>().getString(
                             when {
+                                // The sheet itself may be short; the same words whether or not
+                                // the reader is still on the page.
+                                cut -> R.string.trouble_cut_short
                                 // Made again under its own name: nothing beside it to point to.
                                 gone && copy.name == sheet.name && stillReading -> R.string.trouble_gone_remade_here
                                 gone && copy.name == sheet.name -> R.string.trouble_gone_remade_away
@@ -792,7 +808,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
                 // opening any sheet clears it.
                 stalled = true
                 say(
-                    getApplication<Application>().getString(R.string.trouble_moved_on_no_copy, sheet.name),
+                    getApplication<Application>().getString(
+                        // A sheet the save itself cut short did not change somewhere else.
+                        if (cut) R.string.trouble_save_failed else R.string.trouble_moved_on_no_copy,
+                        sheet.name,
+                    ),
                     it,
                 )
             }

@@ -162,6 +162,21 @@ fun keepName(name: String, gone: Boolean, taken: Collection<String>): String =
     if (gone && name !in taken) name else besideName(name)
 
 /**
+ * Run [write], and if it fails, run it once more straight away: never a loop.
+ *
+ * An overwrite shortens the sheet before it puts the new text in, so a write that fails part
+ * way can leave the sheet in the folder empty or cut short, and a sync app will carry that
+ * out to the reader's other machines. A second full write repairs a passing failure. Null
+ * when one of the two went through; otherwise the second failure, with the first attached.
+ */
+fun writeTwice(write: () -> Unit): Throwable? {
+    val first = runCatching(write).exceptionOrNull() ?: return null
+    val second = runCatching(write).exceptionOrNull() ?: return null
+    if (second !== first) second.addSuppressed(first)
+    return second
+}
+
+/**
  * The folder the reader chose, and the sheets in it.
  *
  * Everything goes through the document provider rather than a path. That is what lets the

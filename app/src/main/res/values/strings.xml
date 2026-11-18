@@ -188,6 +188,8 @@
     <!-- %1$s is the file that was no longer in the folder and has been made again, under the same name, with what was typed -->
     <string name="trouble_gone_remade_here">%1$s was no longer in the folder, so it has been made again with what you typed. It is the sheet you are in.</string>
     <string name="trouble_gone_remade_away">%1$s was no longer in the folder, so it has been made again with what you typed.</string>
+    <!-- %1$s is the file that could not be saved, twice, and may now be shorter than it was; %2$s the new file holding what was typed -->
+    <string name="trouble_cut_short">%1$s could not be saved, and it may have been left cut short. What you typed is in %2$s.</string>
     <!-- %1$s is the file name -->
     <string name="trouble_moved_on_no_copy">%1$s changed somewhere else, and a second copy could not be made either. Nothing has been written over. What you typed is still on this page — get it somewhere safe before leaving it.</string>
     <!-- %1$s is the file name -->
