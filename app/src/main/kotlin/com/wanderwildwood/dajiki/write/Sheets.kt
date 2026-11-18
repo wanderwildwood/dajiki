@@ -23,27 +23,29 @@ const val DIARY_FOLDER = "Diary"
 
 /**
  * Whether [sheet] belongs to the diary: it is in the Diary folder, or it is a day's page (the
- * date alone for a name) wherever it is. What the diary lock covers.
+ * date alone for a name), or a copy of one, wherever it is. What the diary lock covers.
  */
 fun isDiaryPage(sheet: Sheet): Boolean = isDiaryPage(sheet.name, sheet.diary)
 
-/** [isDiaryPage] by the sheet's name and whether it is in the Diary folder. */
-fun isDiaryPage(name: String, inDiaryFolder: Boolean): Boolean =
-    inDiaryFolder || notBeside(name).let { n -> dayInName(n)?.let { isPageFor(n, it) } == true }
-
 /**
- * [name] without the " (this phone)" that [besideName] puts on a copy, however many times, so
- * the copy of a day page made when a sync clashed is locked with the diary as its page is.
+ * [isDiaryPage] by the sheet's name and whether it is in the Diary folder.
+ *
+ * A copy of a day's page holds that day's writing as much as the page does, so it is locked
+ * with it: this app's own "(this phone)" copy, a provider's "(1)" for a name already taken
+ * (and both together), a sync app's "(conflicted copy …)" or ".sync-conflict-…". Only for
+ * the lock: By day and Today still take the bare date alone as the page. A sheet started at
+ * a minute, "2026-11-08 1432.txt", is not a copy and stays outside.
  */
-private fun notBeside(name: String): String {
-    val dot = name.lastIndexOf('.')
-    var stem = if (dot > 0) name.substring(0, dot) else name
-    val ext = if (dot > 0) name.substring(dot) else ""
-    while (stem.endsWith(BESIDE)) stem = stem.removeSuffix(BESIDE)
-    return stem + ext
+fun isDiaryPage(name: String, inDiaryFolder: Boolean): Boolean {
+    if (inDiaryFolder) return true
+    val day = dayInName(name) ?: return false
+    if (isPageFor(name, day)) return true
+    val date = dayName(day)
+    return name.startsWith(date) && COPY_OF_PAGE.containsMatchIn(name.substring(date.length))
 }
 
-private const val BESIDE = " (this phone)"
+/** What follows the date in the name of a copy of a day's page. */
+private val COPY_OF_PAGE = Regex("""^(\s?\(|(\.[A-Za-z]+)?\.sync-conflict)""")
 
 /**
  * What the Sheets tab lists: everything, or with the diary in its own folder, everything but

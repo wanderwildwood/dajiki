@@ -89,6 +89,21 @@ class SheetsTest {
     }
 
     @Test
+    fun aCopyOfADaysPageIsLockedWithIt() {
+        // A second clash while the first copy is still there: the provider numbers it.
+        assertTrue(isDiaryPage("2026-11-08 (this phone) (1).txt", inDiaryFolder = false))
+        // Today made twice: the provider's own "(1)".
+        assertTrue(isDiaryPage("2026-11-08 (1).txt", inDiaryFolder = false))
+        // Sync apps' copies of the same page.
+        assertTrue(isDiaryPage("2026-11-08 (conflicted copy 2026-11-09 101500).txt", inDiaryFolder = false))
+        assertTrue(isDiaryPage("2026-11-08.sync-conflict-20261109-101500-ABCDEFG.txt", inDiaryFolder = false))
+        assertTrue(isDiaryPage("2026-11-08.txt.sync-conflict-20261109-101500-ABCDEFG", inDiaryFolder = false))
+        // Still not: a sheet started at a minute, and its own numbered copy.
+        assertFalse(isDiaryPage("2026-11-08 1432 (1).txt", inDiaryFolder = false))
+        assertFalse(isDiaryPage("2026-11-08 notes.txt", inDiaryFolder = false))
+    }
+
+    @Test
     fun aSheetNotInUtf8IsRefusedRatherThanSpoilt() {
         assertEquals("café", decodeSheet("café".toByteArray(Charsets.UTF_8)))
         val latin1 = "café".toByteArray(Charsets.ISO_8859_1)
