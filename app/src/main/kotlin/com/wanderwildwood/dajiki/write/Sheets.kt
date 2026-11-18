@@ -333,12 +333,24 @@ class Folder(context: Context) {
      */
     fun write(uri: Uri, text: String) {
         val bytes = text.toByteArray(Charsets.UTF_8)
-        val descriptor = runCatching { resolver.openFileDescriptor(uri, "rwt") }
-            .getOrNull()
+        val truncating = runCatching { resolver.openFileDescriptor(uri, "rwt") }.getOrNull()
+        val descriptor = truncating
             ?: resolver.openFileDescriptor(uri, "rw")
             ?: error("The folder would not let ${uri.lastPathSegment} be written.")
 
         descriptor.use {
+            if (truncating == null) {
+                // Opened without "t": nothing has shortened the file, and ftruncate is all
+                // there is. Settled before a byte is written, so a sheet that cannot be
+                // shortened is refused untouched rather than saved with the old tail on it.
+                // Text at least as long as what is there covers all of it anyway.
+                try {
+                    Os.ftruncate(it.fileDescriptor, 0L)
+                } catch (_: ErrnoException) {
+                    val old = runCatching { Os.fstat(it.fileDescriptor).st_size }.getOrDefault(Long.MAX_VALUE)
+                    if (old > bytes.size) error("The folder would not let ${uri.lastPathSegment} be shortened.")
+                }
+            }
             FileOutputStream(it.fileDescriptor).use { stream ->
                 stream.write(bytes)
                 stream.flush()
@@ -348,10 +360,10 @@ class Folder(context: Context) {
                 try {
                     Os.ftruncate(it.fileDescriptor, bytes.size.toLong())
                 } catch (_: ErrnoException) {
-                    // A provider whose descriptor cannot be truncated in place. If "rwt" was
-                    // honoured the file was already truncated when it opened, so this is a
-                    // second line of defence failing rather than the save failing, and it is
-                    // not worth telling the reader about.
+                    // A provider whose descriptor cannot be truncated in place. The file was
+                    // already shortened as it opened ("rwt", or the ftruncate above), or it
+                    // was no longer than this text, so this is a second line of defence failing
+                    // rather than the save failing, and it is not worth telling the reader about.
                 }
             }
         }
