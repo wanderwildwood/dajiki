@@ -30,9 +30,12 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * A sheet and what was in it when it opened, handed over together so the page can key on it.
  * [at] is where the cursor starts, for a sheet opened from a search; null is the end, where a
- * sheet is almost always opened to carry on.
+ * sheet is almost always opened to carry on. [reload] tells apart two openings of the same sheet
+ * with the same text: a sheet read again on the way back into the app may hold exactly what it
+ * held when it opened while the page shows more, and an equal [Opened] would leave that page up
+ * against a file that no longer says it.
  */
-data class Opened(val sheet: Sheet, val text: String, val at: Int? = null)
+data class Opened(val sheet: Sheet, val text: String, val at: Int? = null, val reload: Long = 0L)
 
 /**
  * What a page's text field starts with, and where its cursor goes: the words as they stand now
@@ -802,6 +805,9 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
      * Only when there is nothing in flight. With unsaved words on the page this does nothing
      * and leaves it to the save, which will keep both copies rather than pick one.
      */
+    /** How many times a sheet has been read again by [resumed], for [Opened.reload]. */
+    private var reloads = 0L
+
     fun resumed() {
         // No sheet open: the folder list may be stale after a sync or another app's work.
         if (state.value.opened == null) {
@@ -834,7 +840,8 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
             pending = text
             seen = stamp
             written = text
-            _state.update { it.copy(opened = Opened(sheet, text), unsaved = false) }
+            reloads += 1
+            _state.update { it.copy(opened = Opened(sheet, text, reload = reloads), unsaved = false) }
         }
     }
 
