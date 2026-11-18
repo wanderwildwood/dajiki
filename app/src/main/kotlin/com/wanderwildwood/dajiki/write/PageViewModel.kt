@@ -273,10 +273,21 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
 
     fun open(sheet: Sheet, at: Int? = null) = guarded(isDiaryPage(sheet)) { openNow(sheet, at) }
 
+    /**
+     * The page being swapped for another (Open, New or Today), while it is under way. A second
+     * ask in that time is let go: on this panel a tap often lands twice, and listing a slow
+     * folder can take seconds, so Today pressed twice would otherwise make the day's page twice
+     * and New twice would leave an empty sheet behind.
+     */
+    private var switching: Job? = null
+
+    private fun busySwitching(): Boolean = switching?.isActive == true
+
     private fun openNow(sheet: Sheet, at: Int? = null) {
+        if (busySwitching()) return
         val leavingPage = pageToSave()
         val abandoned = untouched(state.value.opened?.sheet, pending)
-        viewModelScope.launch {
+        switching = viewModelScope.launch {
             if (!leave(leavingPage)) return@launch
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -320,6 +331,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     fun openToday() = guarded(diarySide = true) { openTodayNow() }
 
     private fun openTodayNow() {
+        if (busySwitching()) return
         val where = state.value.folder ?: return
         val today = LocalDate.now()
         val current = state.value.opened?.sheet
@@ -329,7 +341,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val format = state.value.format
         val diary = state.value.diaryFolder
 
-        viewModelScope.launch {
+        switching = viewModelScope.launch {
             if (!leave(leavingPage)) return@launch
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -457,10 +469,11 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun newSheet() {
+        if (busySwitching()) return
         val where = state.value.folder ?: return
         val leavingPage = pageToSave()
         val abandoned = untouched(state.value.opened?.sheet, pending)
-        viewModelScope.launch {
+        switching = viewModelScope.launch {
             if (!leave(leavingPage)) return@launch
             runCatching { withContext(Dispatchers.IO) { folder.create(where, state.value.format) } }
                 .onSuccess { sheet ->

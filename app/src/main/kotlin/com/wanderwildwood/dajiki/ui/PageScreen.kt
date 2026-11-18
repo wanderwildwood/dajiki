@@ -210,8 +210,11 @@ private fun shortcut(
     onFiles: () -> Unit,
 ): Boolean {
     if (event.type != KeyEventType.KeyDown) return false
+    // A key held down repeats; a shortcut acts on the first press only, or a held Ctrl+N
+    // would start a new sheet for every repeat. The repeats are still taken here.
+    val first = event.nativeKeyEvent.repeatCount == 0
     if (event.key == Key.Escape) {
-        onFiles()
+        if (first) onFiles()
         return true
     }
     // Ctrl, and NOT Alt. On a good many layouts AltGr arrives as Ctrl+Alt together, and
@@ -222,10 +225,10 @@ private fun shortcut(
     // Anything held with Alt belongs to the text field, whatever else is held with it.
     if (!event.isCtrlPressed || event.isAltPressed) return false
     return when (printed(event)) {
-        's' -> { onSaveNow(); true }
-        'n' -> { onNew(); true }
-        'o' -> { onFiles(); true }
-        't' -> { onToday(); true }
+        's' -> { if (first) onSaveNow(); true }
+        'n' -> { if (first) onNew(); true }
+        'o' -> { if (first) onFiles(); true }
+        't' -> { if (first) onToday(); true }
         else -> false
     }
 }
