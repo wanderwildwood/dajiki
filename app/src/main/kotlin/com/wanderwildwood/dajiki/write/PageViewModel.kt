@@ -277,7 +277,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val leavingPage = pageToSave()
         val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
-            leavingPage?.let { (was, text) -> save(was, text) }
+            if (!leave(leavingPage)) return@launch
             runCatching {
                 withContext(Dispatchers.IO) {
                     // Stamped before the read, never after. If the file changes in the gap
@@ -330,7 +330,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val diary = state.value.diaryFolder
 
         viewModelScope.launch {
-            leavingPage?.let { (was, text) -> save(was, text) }
+            if (!leave(leavingPage)) return@launch
             runCatching {
                 withContext(Dispatchers.IO) {
                     val found = folder.list(where, diary)
@@ -461,7 +461,7 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         val leavingPage = pageToSave()
         val abandoned = untouched(state.value.opened?.sheet, pending)
         viewModelScope.launch {
-            leavingPage?.let { (was, text) -> save(was, text) }
+            if (!leave(leavingPage)) return@launch
             runCatching { withContext(Dispatchers.IO) { folder.create(where, state.value.format) } }
                 .onSuccess { sheet ->
                     if (abandoned != null) discard(abandoned)
@@ -557,6 +557,38 @@ class PageViewModel(application: Application) : AndroidViewModel(application) {
         if (!state.value.unsaved) return null
         val sheet = state.value.opened?.sheet ?: return null
         return sheet to pending
+    }
+
+    /**
+     * Write out the page being left for another ([page], from [pageToSave]), and say whether
+     * the switch may go ahead: only once those words are somewhere. A write that failed, or a
+     * clash whose copy could not be made, leaves the page where it is, unsaved, with the
+     * reason on a dialog, as [close] does; opening the next page over it would drop the words.
+     *
+     * The sheet is looked up inside the pen rather than taken from [page]. A save from the
+     * pause may already have met a clash and moved the page to its copy, and these words
+     * belong in that copy rather than in a second one. While this runs the reader is on the
+     * way out ([leaving]), so a clash met here does not pull the page onto the copy or say
+     * that it did: the copy is named and the switch carries on.
+     */
+    private suspend fun leave(page: Pair<Sheet, String>?): Boolean {
+        if (page == null) return true
+        val text = page.second
+        pen.withLock {
+            withContext(NonCancellable) {
+                val target = state.value.opened?.sheet ?: return@withContext
+                // Already written by the save ahead of this one, and nothing typed since.
+                if (!state.value.unsaved) return@withContext
+                val wasLeaving = leaving
+                leaving = true
+                try {
+                    write(target, text)
+                } finally {
+                    leaving = wasLeaving
+                }
+            }
+        }
+        return !(state.value.unsaved && state.value.opened != null)
     }
 
     /** Write now, whatever the wait was doing. Called on the way out of the app and the sheet. */
