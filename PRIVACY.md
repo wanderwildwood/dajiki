@@ -35,6 +35,17 @@ The app makes no backups and has no export. It is also left out of Android's own
 (`allowBackup="false"` in the manifest), so what it keeps for itself (its settings) stays on the
 phone. Your sheets are already ordinary files in your folder: to keep a copy, copy the folder.
 
+## Other apps on the phone
+
+The app can see whether these are on the phone. None of this is a permission:
+
+- **Home** (`com.wanderwildwood.iori`): when it is installed, the app asks it whether its dark
+  mode switch is on, a yes or no, and sends it nothing.
+- **Apps that act on selected text**, such as the Dictionary's Define, so the menu over a
+  selection can offer them. The selected text goes to that app only when you choose it, and
+  if it gives a word back, the word takes the selection's place.
+- **A browser**, so the link in About opens in a real one.
+
 ## The one address in the app
 
 The llama at the foot of the About opens `square.link/u/AGu8oT10` in whatever browser you
