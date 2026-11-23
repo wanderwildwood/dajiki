@@ -1,6 +1,5 @@
 package com.wanderwildwood.dajiki.ui
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -74,9 +73,10 @@ fun SettingsScreen(
 ) {
     // Saveable: turning the phone round to see how it looks must not leave Settings.
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
-    var noLayoutPage by rememberSaveable { mutableStateOf(false) }
     var turnOpen by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+    // The row is for a phone that has the page it opens; the manifest's <queries> lets this see it.
+    val layoutPageHere = remember { Intent(Settings.ACTION_HARD_KEYBOARD_SETTINGS).resolveActivity(context.packageManager) != null }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -216,7 +216,7 @@ fun SettingsScreen(
                     onClick = onSizePerSheet,
                 )
             }
-            item {
+            if (layoutPageHere) item {
                 // Kompakt OS reads every Bluetooth keyboard as US QWERTY and its own settings
                 // have no way to say otherwise, so the keys printed å, ä and ö type [, ' and ;.
                 // The layouts are on the phone -- Nordic, German, Swiss and the rest -- behind
@@ -224,16 +224,9 @@ fun SettingsScreen(
                 // This is that link. The letters are the platform's to get right, not ours.
                 Setting(
                     title = stringResource(R.string.settings_keyboard_layout),
-                    value = stringResource(
-                        if (noLayoutPage) R.string.settings_keyboard_layout_missing
-                        else R.string.settings_keyboard_layout_note,
-                    ),
+                    value = stringResource(R.string.settings_keyboard_layout_note),
                     onClick = {
-                        try {
-                            context.startActivity(Intent(Settings.ACTION_HARD_KEYBOARD_SETTINGS))
-                        } catch (e: ActivityNotFoundException) {
-                            noLayoutPage = true
-                        }
+                        runCatching { context.startActivity(Intent(Settings.ACTION_HARD_KEYBOARD_SETTINGS)) }
                     },
                 )
             }

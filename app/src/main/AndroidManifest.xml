@@ -27,6 +27,10 @@
         <!-- Cabinet, which draws its own folder chooser for Settings; without it the
              phone's stock one is used. -->
         <package android:name="com.wanderwildwood.tana" />
+        <!-- Android's Physical keyboard page, so Settings can tell whether to offer the link. -->
+        <intent>
+            <action android:name="android.settings.HARD_KEYBOARD_SETTINGS" />
+        </intent>
     </queries>
 
     <application
