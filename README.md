@@ -73,6 +73,8 @@ line needed to be attached to.
   what you just typed**.
   Everything else a keyboard does — Home, End, page keys, shift to select, word-wise arrows —
   is the platform's text field doing what it already does correctly, untouched.
+- **Full screen**, from the foot of the page: the status bar, navigation bar and every control
+  go, and only the words are left. Back (or Escape) comes out; it is not kept between launches.
 - **A way to the keyboard layout.** The Kompakt reads every Bluetooth keyboard as US QWERTY,
   so on a Nordic or German keyboard the keys marked å, ä, ö or ü type `[`, `'`, `;`. The right
   layouts are on the phone, behind Android's own Physical keyboard page, but nothing in the

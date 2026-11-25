@@ -67,6 +67,8 @@
 
     <!-- The way back to the list of files (noun, plural) -->
     <string name="page_files">Sheets</string>
+    <!-- Hides everything but the words; Back comes out of it -->
+    <string name="page_full_screen">Full screen</string>
     <!-- The word count at the foot of the page -->
     <plurals name="page_word_count">
         <item quantity="one">%d word</item>

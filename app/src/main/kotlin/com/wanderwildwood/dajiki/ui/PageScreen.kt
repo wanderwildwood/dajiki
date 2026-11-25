@@ -84,6 +84,8 @@ fun PageScreen(
     onFiles: () -> Unit,
     onRename: (String) -> Unit,
     onSize: (Size) -> Unit,
+    fullScreen: Boolean,
+    onFullScreen: () -> Unit,
 ) {
     /*
      * The text lives in a TextFieldState rather than in a value this screen hands back and
@@ -169,8 +171,10 @@ fun PageScreen(
                 .textActions(field),
         )
 
-        HorizontalDividerMMD()
-        Foot(
+        // Full screen is the text field and nothing else: no foot, no count, no way out on the
+        // glass. Back (and Escape) leave it, which MainActivity handles.
+        if (!fullScreen) HorizontalDividerMMD()
+        if (!fullScreen) Foot(
             name = opened.sheet.name,
             words = words.takeIf { showWordCount },
             unsaved = unsaved,
@@ -178,6 +182,7 @@ fun PageScreen(
             onFiles = onFiles,
             onRename = { renaming = true },
             onSize = { onSize(next(size)) },
+            onFullScreen = onFullScreen,
         )
     }
 
@@ -268,6 +273,7 @@ private fun Foot(
     onFiles: () -> Unit,
     onRename: () -> Unit,
     onSize: () -> Unit,
+    onFullScreen: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -304,6 +310,18 @@ private fun Foot(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clickable(onClick = onSize)
+                .padding(horizontal = 10.dp)
+                .wrapContentHeight(Alignment.CenterVertically),
+        )
+
+        // Hides the status bar and everything of the app's own but the words. Back comes out.
+        TextMMD(
+            text = stringResource(R.string.page_full_screen),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            modifier = Modifier
+                .heightIn(min = 48.dp)
+                .clickable(onClick = onFullScreen)
                 .padding(horizontal = 10.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
         )

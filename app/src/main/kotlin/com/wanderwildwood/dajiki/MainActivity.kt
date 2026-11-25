@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalCursorBlinkEnabled
@@ -247,6 +250,28 @@ private fun Typewriter(
             looking.showing != Showing.SHEETS,
     ) { viewModel.show(Showing.SHEETS) }
 
+    /*
+     * Full screen: the page with the status bar, the navigation bar and the foot all hidden.
+     * Not remembered: every launch starts as usual, so there is never a start with no visible
+     * way out. It survives a turn of the phone (rememberSaveable), ends on the lock screen,
+     * settings, or leaving the page, and Back or Escape ends it.
+     */
+    var fullScreenWanted by rememberSaveable { mutableStateOf(false) }
+    val fullScreen = fullScreenWanted && opened != null && !covered && !settingsOpen
+    LaunchedEffect(opened == null) { if (opened == null) fullScreenWanted = false }
+    DisposableEffect(fullScreen) {
+        val controller = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+        if (fullScreen) {
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose { controller.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+    // After the handler above, so it is asked first.
+    BackHandler(enabled = fullScreen) { fullScreenWanted = false }
+
     when {
         covered -> LockScreen(
             app = state.lock == LockScope.APP,
@@ -280,7 +305,9 @@ private fun Typewriter(
             onSaveNow = viewModel::saveNow,
             onNew = viewModel::newSheet,
             onToday = viewModel::openToday,
-            onFiles = viewModel::close,
+            onFiles = if (fullScreen) ({ fullScreenWanted = false }) else viewModel::close,
+            onFullScreen = { fullScreenWanted = true },
+            fullScreen = fullScreen,
             onRename = viewModel::renameOpen,
             onSize = viewModel::setSizeHere,
         )
