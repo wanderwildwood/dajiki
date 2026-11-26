@@ -4,6 +4,7 @@ import android.view.KeyCharacterMap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -284,7 +285,7 @@ private fun Foot(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clickable(onClick = onFiles)
-                .padding(horizontal = 16.dp),
+                .padding(start = 16.dp, end = 8.dp),
         ) {
             Icon(
                 imageVector = Icons.Back,
@@ -310,7 +311,7 @@ private fun Foot(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clickable(onClick = onSize)
-                .padding(horizontal = 10.dp)
+                .padding(horizontal = 7.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
         )
 
@@ -322,7 +323,7 @@ private fun Foot(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clickable(onClick = onFullScreen)
-                .padding(horizontal = 10.dp)
+                .padding(horizontal = 7.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
         )
 
@@ -333,9 +334,12 @@ private fun Foot(
         // than pushing the count off the edge or the foot onto two lines.
         // Where even that is too long (held upright, a dated name and a word count), the
         // extension goes first: "2026-11-08" says which page this is, ".txt" does not.
+        // Held upright at 480 px with Full screen in the row, the name can be left less room
+        // than a tappable line takes (48 dp). Drawn there anyway it spilled over the word count;
+        // below that it is left out, and the row still has every control.
         var stemOnly by remember(name) { mutableStateOf(false) }
-        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-            TextMMD(
+        BoxWithConstraints(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            if (maxWidth >= FOOT_NAME_MIN) TextMMD(
                 text = if (stemOnly) name.substringBeforeLast('.', name) else name,
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
@@ -344,7 +348,7 @@ private fun Foot(
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .clickable(onClick = onRename)
-                    .padding(start = 8.dp, end = 4.dp)
+                    .padding(start = 7.dp, end = 4.dp)
                     .wrapContentHeight(Alignment.CenterVertically),
             )
         }
@@ -368,3 +372,6 @@ private fun Foot(
 }
 
 private const val WORD_COUNT_PAUSE = 400L
+
+/** The least room the sheet's name is drawn in at the foot: one tappable line. */
+private val FOOT_NAME_MIN = 48.dp
